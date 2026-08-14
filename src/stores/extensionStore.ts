@@ -10,6 +10,7 @@ import type {
   ExtensionInfo,
   ExtensionStats,
   ExtensionKind,
+  UpdateExtensionInput,
 } from '../services/extensions/api';
 
 // ====== 内存缓存 ======
@@ -219,6 +220,26 @@ export async function createExtensionAction(input: CreateExtensionInput): Promis
     return null;
   } finally {
     loading = false;
+    notifyAll();
+  }
+}
+
+export async function updateExtensionAction(input: UpdateExtensionInput): Promise<ExtensionInfo | null> {
+  const id = input.id;
+  actionLoading.add(id);
+  error = null;
+  notifyAll();
+
+  try {
+    const updated = await api.updateExtension(input);
+    await refreshExtensionsFromApi();
+    await refreshExtensionStats();
+    return updated;
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+    return null;
+  } finally {
+    actionLoading.delete(id);
     notifyAll();
   }
 }

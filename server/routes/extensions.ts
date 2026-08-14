@@ -62,6 +62,25 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// PUT /api/extensions/:id — 更新扩展元数据（名称 / 描述 / 类型 / 版本）
+router.put('/:id', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const manifest = await extensionLoader.update(req.params.id, {
+      name: typeof body.name === 'string' ? body.name : undefined,
+      description: typeof body.description === 'string' ? body.description : undefined,
+      kind: typeof body.kind === 'string' ? body.kind : undefined,
+      version: typeof body.version === 'string' ? body.version : undefined,
+    });
+    if (!manifest) {
+      return res.status(404).json({ error: '扩展不存在或更新失败' });
+    }
+    res.json({ data: manifest, message: '扩展已更新' });
+  } catch (e) {
+    res.status(500).json({ error: `更新扩展失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
 // GET /api/extensions — 列表
 router.get('/', (req, res) => {
   try {

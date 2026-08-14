@@ -79,8 +79,11 @@ import {
   importDiscoveredExtensionAction,
   getExtensionError,
   clearExtensionError,
+  updateExtensionAction,
 } from '../stores/extensionStore';
-import type { ExtensionInfo } from '../services/extensions/api';
+import { fetchExtension, updateExtension } from '../services/extensions/api';
+import type { ExtensionDetail, ExtensionInfo } from '../services/extensions/api';
+import { toggleSwitchSx } from '../constants/theme';
 
 const STATUS_CONFIG: Record<string, { label: string; color: 'success' | 'warning' | 'error' | 'default' }> = {
   enabled: { label: '已启用', color: 'success' },
@@ -119,6 +122,64 @@ const KIND_CHIP_COLORS: Record<string, { bg: string; fg: string }> = {
   'api-integration': { bg: 'rgba(59, 130, 246, 0.10)', fg: '#3B82F6' },
 };
 
+// Header 操作按钮统一尺寸（刷新 / 新增 共用，保证高度绝对一致）
+const TOOLBAR_BTN_SX = {
+  borderRadius: '12px',
+  textTransform: 'none' as const,
+  fontWeight: 500,
+  fontSize: '14px',
+  height: 40,
+  minWidth: 0,
+  px: '16px',
+  boxSizing: 'border-box' as const,
+};
+
+/** 详情弹窗的字段行：标签 + 值（支持 JSON 渲染与彩色 chip） */
+const DetailRow: React.FC<{
+  label: string;
+  value?: string;
+  json?: Record<string, unknown>;
+  isDark: boolean;
+  chipColor?: { bg: string; fg: string };
+}> = ({ label, value, json, isDark, chipColor }) => (
+  <Box sx={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+    <Typography sx={{ fontSize: '13px', color: isDark ? '#9CA3AF' : '#6B7280', width: '88px', flexShrink: 0, pt: '2px' }}>
+      {label}
+    </Typography>
+    <Box sx={{ flex: 1, minWidth: 0 }}>
+      {value !== undefined ? (
+        chipColor ? (
+          <Box
+            component="span"
+            sx={{
+              display: 'inline-block', px: '8px', py: '2px', borderRadius: '6px',
+              fontSize: '12px', fontWeight: 500,
+              bgcolor: chipColor.bg, color: chipColor.fg,
+            }}
+          >
+            {value}
+          </Box>
+        ) : (
+          <Typography sx={{ fontSize: '13px', color: isDark ? '#E5E7EB' : '#1F2937', wordBreak: 'break-word' }}>
+            {value}
+          </Typography>
+        )
+      ) : json && Object.keys(json).length > 0 ? (
+        <Box
+          component="pre"
+          sx={{
+            m: 0, p: '8px 10px', borderRadius: '8px', fontSize: '12px',
+            bgcolor: isDark ? '#0F141C' : '#F3F4F6', color: isDark ? '#D1D5DB' : '#374151',
+            whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowX: 'auto',
+          }}
+        >
+          {JSON.stringify(json, null, 2)}
+        </Box>
+      ) : null}
+    </Box>
+  </Box>
+);
+
 const ExtensionsPage: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -146,6 +207,17 @@ const ExtensionsPage: React.FC = () => {
   const [toast, setToast] = useState<{ open: boolean; severity: 'success' | 'error' | 'info'; message: string }>({
     open: false, severity: 'info', message: '',
   });
+
+  // 查看详情弹窗
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailData, setDetailData] = useState<ExtensionDetail | null>(null);
+
+  // 编辑弹窗
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', description: '', kind: 'tool' as ExtensionInfo['kind'], version: '' });
+  const [editErrors, setEditErrors] = useState<{ name?: string }>({});
 
   useEffect(() => {
     const unsubscribe = onExtensionsChange(() => {
@@ -237,6 +309,68 @@ const ExtensionsPage: React.FC = () => {
     setToast({ open: true, severity: 'success', message: `扩展 ${id} 已删除` });
   };
 
+  // 查看详情
+  const handleViewDetail = async () => {
+    if (!selectedExtension) return;
+    const id = selectedExtension.id;
+    setMenuAnchorEl(null);
+    setDetailOpen(true);
+    setDetailLoading(true);
+    setDetailData(null);
+    try {
+      const detail = await fetchExtension(id);
+      setDetailData(detail);
+    } catch (e) {
+      setToast({ open: true, severity: 'error', message: e instanceof Error ? e.message : '获取扩展详情失败' });
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // 编辑
+  const handleOpenEdit = () => {
+    if (!selectedExtension) return;
+    setMenuAnchorEl(null);
+    setEditForm({
+      name: selectedExtension.name,
+      description: selectedExtension.description,
+      kind: selectedExtension.kind as ExtensionInfo['kind'],
+      version: selectedExtension.version,
+    });
+    setEditErrors({});
+    setEditOpen(true);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!selectedExtension) return;
+    const errors: typeof editErrors = {};
+    if (!editForm.name.trim()) errors.name = '请输入扩展名称';
+    if (Object.keys(errors).length) {
+      setEditErrors(errors);
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const updated = await updateExtensionAction({
+        id: selectedExtension.id,
+        name: editForm.name.trim(),
+        description: editForm.description,
+        kind: editForm.kind,
+        version: editForm.version.trim(),
+      });
+      if (updated) {
+        setToast({ open: true, severity: 'success', message: `扩展 ${selectedExtension.id} 已更新` });
+        setEditOpen(false);
+      } else {
+        setToast({ open: true, severity: 'error', message: getExtensionError() || '更新失败' });
+      }
+    } catch (e) {
+      setToast({ open: true, severity: 'error', message: e instanceof Error ? e.message : '更新失败' });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   // 新增菜单
   const handleOpenAddMenu = (e: React.MouseEvent<HTMLElement>) => setAddMenuAnchorEl(e.currentTarget);
   const handleCloseAddMenu = () => setAddMenuAnchorEl(null);
@@ -299,15 +433,10 @@ const ExtensionsPage: React.FC = () => {
             onClick={handleRefresh}
             disabled={loading || discovering}
             sx={{
-              borderRadius: '12px',
-              textTransform: 'none',
+              ...TOOLBAR_BTN_SX,
               color: isDark ? '#E5E7EB' : '#1F2937',
               borderColor: isDark ? '#2A2F3A' : '#E5E7EB',
               bgcolor: isDark ? 'transparent' : '#FFFFFF',
-              px: '16px',
-              py: '8px',
-              fontWeight: 500,
-              fontSize: '14px',
               '&:hover': { borderColor: isDark ? '#3A404E' : '#D1D5DB' }
             }}
           >
@@ -319,13 +448,8 @@ const ExtensionsPage: React.FC = () => {
             endIcon={<ArrowDropDownIcon sx={{ ml: '-4px' }} />}
             onClick={handleOpenAddMenu}
             sx={{
-              borderRadius: '12px',
-              textTransform: 'none',
+              ...TOOLBAR_BTN_SX,
               bgcolor: isDark ? '#1F2937' : '#1F2937',
-              px: '16px',
-              py: '8px',
-              fontWeight: 500,
-              fontSize: '14px',
               '&:hover': { bgcolor: isDark ? '#374151' : '#374151' }
             }}
           >
@@ -655,55 +779,7 @@ const ExtensionsPage: React.FC = () => {
                           checked={isEnabled}
                           onChange={() => handleToggleEnabled(ext)}
                           disabled={isExtensionActionLoading(ext.id)}
-                          sx={{
-                            width: 52,
-                            height: 28,
-                            padding: 0,
-                            '& .MuiSwitch-switchBase': {
-                              padding: '4px',
-                              color: '#fff',
-                              '&.Mui-checked': {
-                                color: '#fff',
-                                transform: 'translateX(24px)',
-                                '& + .MuiSwitch-track': {
-                                    bgcolor: '#10B981',
-                                    opacity: 1,
-                                    '&:before': {
-                                      content: '"开"',
-                                      position: 'absolute',
-                                      left: '8px',
-                                      top: '50%',
-                                      transform: 'translateY(-50%)',
-                                      fontSize: '11px',
-                                      color: '#fff',
-                                    },
-                                    // checked 时隐藏 "关" 文字，避免与 "开" 同时显示
-                                    '&:after': {
-                                      display: 'none',
-                                    },
-                                  },
-                              },
-                              '& + .MuiSwitch-track': {
-                                bgcolor: isDark ? '#4B5563' : '#D1D5DB',
-                                opacity: 1,
-                                borderRadius: '14px',
-                                '&:after': {
-                                  content: '"关"',
-                                  position: 'absolute',
-                                  right: '8px',
-                                  top: '50%',
-                                  transform: 'translateY(-50%)',
-                                  fontSize: '11px',
-                                  color: '#fff',
-                                },
-                              },
-                            },
-                            '& .MuiSwitch-thumb': {
-                              width: 20,
-                              height: 20,
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                            },
-                          }}
+                          sx={toggleSwitchSx(isDark)}
                         />
                         <IconButton
                           size="small"
@@ -741,13 +817,13 @@ const ExtensionsPage: React.FC = () => {
           }
         }}
       >
-        <MenuItem onClick={handleCloseMenu} sx={{ fontSize: '14px', py: '8px', px: '12px' }}>
+        <MenuItem onClick={handleViewDetail} sx={{ fontSize: '14px', py: '8px', px: '12px' }}>
           <ListItemIcon sx={{ minWidth: '28px' }}>
             <VisibilityIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText sx={{ my: 0 }}>查看详情</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleCloseMenu} sx={{ fontSize: '14px', py: '8px', px: '12px' }}>
+        <MenuItem onClick={handleOpenEdit} sx={{ fontSize: '14px', py: '8px', px: '12px' }}>
           <ListItemIcon sx={{ minWidth: '28px' }}>
             <EditIcon fontSize="small" />
           </ListItemIcon>
@@ -993,6 +1069,131 @@ const ExtensionsPage: React.FC = () => {
             }}
           >
             确认删除
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 查看详情 Dialog */}
+      <Dialog
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: '16px', ...(isDark && { bgcolor: '#151921', border: '1px solid #242933' }) } }}
+      >
+        <DialogTitle sx={{ px: '24px', pt: '20px', pb: '8px', fontSize: '18px', fontWeight: 600, color: isDark ? '#E5E7EB' : '#1F2937' }}>
+          扩展详情
+        </DialogTitle>
+        <DialogContent dividers sx={{ px: '24px', py: '20px', borderColor: isDark ? '#242933' : '#E5E7EB' }}>
+          {detailLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <LinearProgress sx={{ width: '60%' }} />
+            </Box>
+          ) : detailData ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <DetailRow label="ID" value={detailData.id} isDark={isDark} />
+              <DetailRow label="名称" value={detailData.name} isDark={isDark} />
+              <DetailRow label="描述" value={detailData.description || '—'} isDark={isDark} />
+              <DetailRow
+                label="类型"
+                value={`${detailData.kind}${KIND_CHIP_COLORS[detailData.kind] ? '' : ''}`}
+                isDark={isDark}
+                chipColor={KIND_CHIP_COLORS[detailData.kind]}
+              />
+              <DetailRow label="版本" value={detailData.version || '—'} isDark={isDark} />
+              <DetailRow label="状态" value={detailData.enabled ? '已启用' : '已停用'} isDark={isDark} />
+              <DetailRow label="SDK 版本" value={detailData.sdkVersion || '—'} isDark={isDark} />
+              <DetailRow label="需要鉴权" value={detailData.requiresAuth ? `是（${detailData.authType || 'unknown'}）` : '否'} isDark={isDark} />
+              <DetailRow
+                label="依赖"
+                value={detailData.dependencies && Object.keys(detailData.dependencies).length ? undefined : '无'}
+                isDark={isDark}
+                json={detailData.dependencies}
+              />
+              {detailData.registeredTools && detailData.registeredTools.length > 0 && (
+                <DetailRow label="注册工具" value={detailData.registeredTools.join('、')} isDark={isDark} />
+              )}
+              {detailData.config && Object.keys(detailData.config).length > 0 && (
+                <DetailRow label="配置" isDark={isDark} json={detailData.config} />
+              )}
+            </Box>
+          ) : (
+            <Typography sx={{ fontSize: '14px', color: isDark ? '#9CA3AF' : '#6B7280' }}>暂无详情</Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: '24px', py: '16px' }}>
+          <Button onClick={() => setDetailOpen(false)} sx={{ borderRadius: '10px', textTransform: 'none', px: '16px' }}>
+            关闭
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 编辑 Dialog */}
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: '16px', ...(isDark && { bgcolor: '#151921', border: '1px solid #242933' }) } }}
+      >
+        <DialogTitle sx={{ px: '24px', pt: '20px', pb: '8px', fontSize: '18px', fontWeight: 600, color: isDark ? '#E5E7EB' : '#1F2937' }}>
+          编辑扩展{selectedExtension ? `：${selectedExtension.id}` : ''}
+        </DialogTitle>
+        <DialogContent dividers sx={{ px: '24px', py: '20px', borderColor: isDark ? '#242933' : '#E5E7EB' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px', mt: '4px' }}>
+            <TextField
+              required
+              label="名称"
+              size="small"
+              value={editForm.name}
+              onChange={(e) => { setEditForm({ ...editForm, name: e.target.value }); setEditErrors({ ...editErrors, name: undefined }); }}
+              error={!!editErrors.name}
+              helperText={editErrors.name ?? '扩展的显示名称'}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: isDark ? '#1A1F29' : '#F9FAFB' } }}
+            />
+            <TextField
+              label="描述"
+              size="small"
+              multiline
+              minRows={2}
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: isDark ? '#1A1F29' : '#F9FAFB' } }}
+            />
+            <FormControl size="small" sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: isDark ? '#1A1F29' : '#F9FAFB' } }}>
+              <InputLabel sx={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>类型</InputLabel>
+              <Select
+                value={editForm.kind}
+                label="类型"
+                onChange={(e) => setEditForm({ ...editForm, kind: e.target.value as ExtensionInfo['kind'] })}
+                sx={{ color: isDark ? '#E5E7EB' : '#1F2937' }}
+              >
+                {EXTENSION_KIND_OPTIONS.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="版本"
+              size="small"
+              value={editForm.version}
+              onChange={(e) => setEditForm({ ...editForm, version: e.target.value })}
+              placeholder="例：1.0.0"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: isDark ? '#1A1F29' : '#F9FAFB' } }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: '24px', py: '16px' }}>
+          <Button onClick={() => setEditOpen(false)} sx={{ borderRadius: '10px', textTransform: 'none', px: '16px' }}>
+            取消
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleEditSubmit}
+            disabled={editSaving || (selectedExtension ? isExtensionActionLoading(selectedExtension.id) : false)}
+            sx={{ borderRadius: '10px', textTransform: 'none', px: '16px', bgcolor: isDark ? '#1F2937' : '#1F2937', '&:hover': { bgcolor: isDark ? '#374151' : '#374151' } }}
+          >
+            {editSaving ? '保存中…' : '保存'}
           </Button>
         </DialogActions>
       </Dialog>

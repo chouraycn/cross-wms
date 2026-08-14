@@ -59,6 +59,8 @@ export interface ExtensionStats {
 /** 扩展详情 */
 export interface ExtensionDetail extends ExtensionInfo {
   manifest?: Record<string, any>;
+  config?: Record<string, unknown>;
+  registeredTools?: string[];
 }
 
 /** 获取扩展列表 */
@@ -219,6 +221,31 @@ export async function deleteExtension(id: string): Promise<{ success: boolean; m
     throw new Error(err.error || `API error ${res.status}`);
   }
   return await res.json().then((j) => j.data ?? j);
+}
+
+/** 更新扩展元数据 */
+export interface UpdateExtensionInput {
+  id: string;
+  name?: string;
+  description?: string;
+  kind?: string;
+  version?: string;
+}
+export async function updateExtension(
+  input: UpdateExtensionInput,
+): Promise<ExtensionInfo> {
+  const { id, ...patch } = input;
+  const res = await fetchWithTimeout(`${BASE}/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `API error ${res.status}`);
+  }
+  const json = await res.json();
+  return (json.data ?? json) as ExtensionInfo;
 }
 
 /** 从发现列表加载一个扩展（未在运行时列表中的） */

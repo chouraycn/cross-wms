@@ -190,6 +190,7 @@ import { getAttemptRunner } from './engine/attemptRunner.js';
 import { startWatchdog, stopWatchdog, releaseAllHeldLocks } from './storage/sessionWriteLock.js';
 import { logger } from './logger.js';
 import { extensionLoader } from '../extensions/index.js';
+import { initBundledExtensions, registerBundledExtensionsWithLoader } from '../extensions/registry.js';
 
 // v1.5.220+: 全局 Express 错误兜底中间件（统一错误日志）
 import { errorLogger } from './engine/error-handling/index.js';
@@ -809,7 +810,17 @@ server.listen(PORT, () => {
         }
       }),
       extensionLoader.loadAll().then(async (count) => {
-        logger.info(`[Extension Loader] 扩展加载完成: ${count} 个扩展已加载`);
+        logger.info(`[Extension Loader] 文件系统发现: ${count} 个扩展已加载`);
+        // 注册内置扩展（打包后无 extensions/ 目录时，通过 registry 静态注册补全）
+        try {
+          initBundledExtensions();
+          const registered = await registerBundledExtensionsWithLoader();
+          if (registered > 0) {
+            logger.info(`[Extension Loader] 内置扩展静态注册: ${registered} 个`);
+          }
+        } catch (err) {
+          logger.warn('[Extension Loader] 内置扩展注册失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+        }
         // 恢复 DB 中标记为已启用的扩展，使其能力重新注册到 server 端注册表
         try {
           const restored = await extensionLoader.restoreEnabledOnStartup();

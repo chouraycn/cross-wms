@@ -253,7 +253,27 @@ export class ExtensionLoader {
     if (restored > 0) {
       this.logger.info(`restoreEnabledOnStartup: 已恢复 ${restored} 个扩展`);
     }
-    return restored;
+
+    // 对于 DB 中没有记录的 tool/web-search 扩展，自动启用（首次使用默认开启）
+    const knownIds = new Set(states.map((s) => s.id));
+    const autoEnableKinds = new Set(['tool', 'web-search']);
+    let autoEnabled = 0;
+    for (const [id, entry] of this.extensions) {
+      if (entry.enabled) continue;
+      if (knownIds.has(id)) continue; // DB 有记录（含 enabled=0），尊重用户选择
+      if (!autoEnableKinds.has(entry.manifest.kind)) continue;
+      try {
+        const ok = await this.enable(id, {});
+        if (ok) autoEnabled++;
+      } catch (error) {
+        this.logger.warn(`restoreEnabledOnStartup: 自动启用 ${id} 失败:`, error);
+      }
+    }
+    if (autoEnabled > 0) {
+      this.logger.info(`restoreEnabledOnStartup: 自动启用 ${autoEnabled} 个 tool/web-search 扩展（首次使用默认开启）`);
+    }
+
+    return restored + autoEnabled;
   }
 
   /** 持久化扩展启用状态与配置（DB 不可用时静默跳过） */
@@ -441,6 +461,49 @@ export class ExtensionLoader {
       this.logger.warn(`createExtension: auto-load failed for ${id}. Will be available on restart.`);
     }
 
+    return manifest;
+  }
+
+  /**
+   * 更新扩展元数据：读取 extensions/<id>/extension.json，合并可编辑字段后写回。
+   * 同时同步内存 registry 的 manifest，使列表/详情立即反映改动（无需重载）。
+   * 返回更新后的 manifest；扩展不存在或写入失败返回 null。
+   */
+  async update(
+    id: string,
+    params: { name?: string; description?: string; kind?: string; version?: string },
+  ): Promise<ExtensionManifest | null> {
+    const extDir = path.join(process.cwd(), 'extensions', id);
+    const manifestPath = path.join(extDir, 'extension.json');
+
+    let manifest: ExtensionManifest;
+    try {
+      const content = await fs.readFile(manifestPath, 'utf-8');
+      manifest = JSON.parse(content) as ExtensionManifest;
+    } catch {
+      this.logger.error(`updateExtension: manifest not found for ${id}`);
+      return null;
+    }
+
+    if (params.name !== undefined && params.name.trim()) manifest.name = params.name.trim();
+    if (params.description !== undefined) manifest.description = params.description;
+    if (params.kind !== undefined && params.kind.trim()) {
+      manifest.kind = params.kind.trim() as ExtensionManifest['kind'];
+    }
+    if (params.version !== undefined && params.version.trim()) manifest.version = params.version.trim();
+
+    try {
+      await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+    } catch (error) {
+      this.logger.error(`updateExtension: write manifest failed for ${id}:`, error);
+      return null;
+    }
+
+    // 同步内存 registry，使列表/详情立即反映改动（无需重载整个扩展）
+    const entry = this.extensions.get(id);
+    if (entry) entry.manifest = manifest;
+
+    this.logger.info(`Updated extension: ${id}`);
     return manifest;
   }
 

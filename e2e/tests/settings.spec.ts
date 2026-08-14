@@ -40,8 +40,9 @@ async function expandGroup(panel: Locator, description: string): Promise<void> {
 
 test.describe('设置弹窗回归测试 @smoke @settings', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/#/chat');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/#/chat', { waitUntil: 'domcontentloaded' });
+    // 等待侧边栏挂载
+    await page.getByRole('button', { name: '设置' }).waitFor({ timeout: 15000 });
   });
 
   test('侧边栏不应包含"创作"和"系统"两个分组（已迁移到设置弹窗）', async ({ page }) => {
