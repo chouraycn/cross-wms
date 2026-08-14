@@ -6,6 +6,7 @@
 //  - ../process/exec.js 的 runCommandWithTimeout 从 ./update-runner.js 导入
 //  - ../runtime.js 的 defaultRuntime/RuntimeEnv 降级为本地占位
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { normalizeStringEntries } from "./string-normalization.js";
 import { runCommandWithTimeout } from "./update-runner.js";
 import * as controlUiFsRuntime from "./control-ui-assets.fs.runtime.js";

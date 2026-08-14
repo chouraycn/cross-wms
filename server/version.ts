@@ -1,6 +1,6 @@
 // Version module for cross-wms server
 import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import path, { join } from "node:path";
 import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

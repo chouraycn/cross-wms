@@ -46,7 +46,8 @@ export async function probeFeishu(optionsOrCfg: ProbeFeishuOptions | any): Promi
   }
 
   try {
-    const client = createFeishuClient({ ...account, httpTimeoutMs: timeoutMs ?? FEISHU_PROBE_REQUEST_TIMEOUT_MS });
+    // @larksuiteoapi/node-sdk 1.73 类型缺 bot.info（运行时 lib 存在），桥接 any 保持探测能力
+    const client: any = createFeishuClient({ ...account, httpTimeoutMs: timeoutMs ?? FEISHU_PROBE_REQUEST_TIMEOUT_MS });
     const botInfo = await client.bot.info.get();
     if (botInfo.code !== 0) {
       const result: FeishuProbeResult = { ok: false, appId: account.appId, error: `API error: ${botInfo.msg || `code ${botInfo.code}`}` };
