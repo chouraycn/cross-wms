@@ -145,6 +145,8 @@ export function initBundledExtensions(): void {
   registerBundledExtension('slack', 'channel', async () => (await import('./slack/index.js')).default);
   registerBundledExtension('telegram', 'channel', async () => (await import('./telegram/index.js')).default);
   registerBundledExtension('feishu', 'channel', async () => (await import('./feishu/index.js')).default);
+  registerBundledExtension('wecom', 'channel', async () => (await import('./wecom/index.js')).default);
+  registerBundledExtension('wechat', 'channel', async () => (await import('./wechat/index.js')).default);
   registerBundledExtension('qqbot', 'channel', async () => (await import('./qqbot/index.js')).default);
   registerBundledExtension('whatsapp', 'channel', async () => (await import('./whatsapp/index.js')).default);
   registerBundledExtension('matrix', 'channel', async () => (await import('./matrix/index.js')).default);

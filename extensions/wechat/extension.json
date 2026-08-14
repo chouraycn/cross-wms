@@ -1,0 +1,10 @@
+{
+  "id": "wechat",
+  "name": "WeChat Channel",
+  "description": "微信公众号官方 API 渠道扩展（客服消息/模板消息/回调验签+AES 解密）",
+  "version": "1.0.0",
+  "kind": "channel",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

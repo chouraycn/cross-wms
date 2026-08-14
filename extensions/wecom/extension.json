@@ -1,0 +1,10 @@
+{
+  "id": "wecom",
+  "name": "WeCom Channel",
+  "description": "企业微信官方 API 渠道扩展（自建应用消息/群机器人 webhook/回调验签+AES 解密）",
+  "version": "1.0.0",
+  "kind": "channel",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}
