@@ -168,7 +168,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
   useEffect(() => {
     if (!settingsOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      // SettingsPopover 的 paper portal 到 body，不在 sidebarRef 内，
+      // 需要额外检查是否点击在 Popover paper 内部，否则点击"关于"等
+      // 不关闭弹窗的菜单项会被误判为外部点击而关闭
+      const inPopover = document.querySelector('.MuiPopover-paper')?.contains(target);
+      if (sidebarRef.current && !sidebarRef.current.contains(target) && !inPopover) {
         setSettingsOpen(false);
       }
     };
@@ -197,6 +202,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
 
   const handleSelectSession = useCallback((sessionId: string) => {
     setActiveSessionId(sessionId);
+    // 通知 ChatContext 切换全局 activeSessionId，触发消息加载和状态同步
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-select-session', { detail: sessionId }));
     // 仅当不在聊天页面时才导航（避免不必要的路由重渲染）
     if (!activePath.startsWith('/chat')) {
       navigate('/chat');

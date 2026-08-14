@@ -115,7 +115,11 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [showSkills, setShowSkills] = useState(false);
   const [showSkillSelector, setShowSkillSelector] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
-  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(initialSkill ?? null);
+  // R2b-4：初始/外部传入的技能若已被停用（status != active），则不自动绑定（避免 URL 注入停用技能）
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(() => {
+    if (initialSkill && initialSkill.status === 'active') return initialSkill;
+    return null;
+  });
   const [inputValue, setInputValue] = useState('');
   const [skillFocusIndex, setSkillFocusIndex] = useState(-1);
 
@@ -288,8 +292,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const currentThinking = getAvailableThinkingLevels.find(t => t.value === thinkingLevel) || getAvailableThinkingLevels[0];
 
   // 当 initialSkill 从外部变化时同步到 selectedSkill（如 SkillDetailPage 跳转过来）
+  // R2b-4：若外部传入的技能已被停用（status != active），则忽略（配合前端 toasts 可加提示）
   useEffect(() => {
-    if (initialSkill) setSelectedSkill(initialSkill);
+    if (initialSkill && initialSkill.status === 'active') setSelectedSkill(initialSkill);
   }, [initialSkill]);
 
   // v1.7.0: 技能切换时清理意图分类状态
@@ -758,6 +763,11 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   };
 
   const handleSkillSelect = (skill: Skill) => {
+    // R2b-4：选择技能前最终检查状态（active 才可绑定）；SkillSelector 已过滤 activeOnly，这里是兜底
+    if (skill.status !== 'active') {
+      showToast(`技能「${skill.name}」已被停用，请到「技能 → 内置」页面启用后再选择`, 'info');
+      return;
+    }
     setSelectedSkill(skill);
     setShowSkills(false);
     setShowSkillSelector(false);
@@ -1665,12 +1675,13 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         />
       </Suspense>
 
-      {/* Skill selector dropdown — @ 触发 */}
+      {/* Skill selector dropdown — @ 触发；R2b-4：只列出 active 状态（用户未停用）的技能 */}
       {showSkills && (
         <SkillSelector
           anchorEl={containerRef.current}
           onSelect={handleSkillSelect}
           onClose={() => setShowSkills(false)}
+          activeOnly
         />
       )}
 

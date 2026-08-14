@@ -562,6 +562,10 @@ export function ChatProvider({
   }, [initialized, fetchSessionsFromAPI, fetchFoldersFromAPI]);
 
   // ===================== 切换会话时：从 sessions 同步到 activeSession =====================
+  // Bug Fix: 保护已加载到 activeSession 的消息 — 当 sessions 变更时，
+  // sessions 中的 found 可能仍然是空 messages（因为 sessions 存的是懒加载前的状态，
+  // 或者 saveSessionsToCache 写入 sessions 时被清为 messages: []），
+  // 直接 return found 会覆盖 setActiveSessionId / 懒加载 effect 刚设置好的带消息的 activeSession。
   useEffect(() => {
     if (!activeSessionId) {
       setActiveSession(createNewSession(defaultModel));
@@ -573,6 +577,17 @@ export function ChatProvider({
         const pending = pendingApiSessionRef.current;
         if (pending && prev.id === pending.localId && found.id === pending.apiId && prev.messages.length > 0) {
           return { ...found, messages: prev.messages };
+        }
+        // 关键修复：当 prev 已是同一会话且 loaded 有消息时，
+        // 不要用 sessions 中的空消息对象覆盖它。
+        // 同时保留 found 上可能更新过的字段（如 title、isPinned、folderId 等 sidebar 级元数据），
+        // 仅 messages 取 prev（可能已经被 setActiveSessionId 或懒加载 effect 填充）
+        if (prev.id === found.id) {
+          const usePrevMessages = prev.messages.length >= found.messages.length;
+          const mergedMessages = usePrevMessages ? prev.messages : found.messages;
+          if (prev.messages.length > 0 || found.messages.length > 0) {
+            return { ...found, ...prev, messages: mergedMessages };
+          }
         }
         return found;
       });

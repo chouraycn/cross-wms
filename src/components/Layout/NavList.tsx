@@ -570,9 +570,8 @@ const NavList: React.FC<NavListProps> = ({
         <ListItemButton
           onClick={() => {
             setJustClickedSessionId(session.id);
-            // 先加载会话消息上下文
-            onLoadSessionContext?.(session.id);
-            // 然后切换 activeSessionId 并导航到聊天页面
+            // onSelectSession 会派发 cdf-know-clow-select-session 事件，
+            // 由 ChatContext 的 setActiveSessionId 统一处理消息加载和会话切换
             onSelectSession(session.id);
           }}
           sx={{
