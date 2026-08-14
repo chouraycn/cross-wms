@@ -245,10 +245,60 @@ const router = Router();
 
 // ===================== User Skills =====================
 
-// GET /api/user-skills
-router.get('/user-skills', (_req: Request, res: Response) => {
+// GET /api/user-skills — 合并 DB 技能 + skillRegistry 运行时技能
+router.get('/user-skills', async (_req: Request, res: Response) => {
   const data = dbGetSkills();
+  // 合并 skillRegistry 中已注册但 DB 中不存在的技能，确保 API 列表 = Agent 可执行技能
+  try {
+    const { skillRegistry } = await import('../engine/skillRegistry.js');
+    const runtimeSkills = skillRegistry.getAllSkills();
+    const dbIds = new Set(data.map((s) => s.id));
+    const runtimeIds = new Set(runtimeSkills.map((s) => s.definition.id));
+    // 为 DB 技能标注 executable 状态
+    for (const skill of data) {
+      skill.executable = runtimeIds.has(skill.id);
+    }
+    // 添加 registry 中有但 DB 中没有的技能
+    for (const rs of runtimeSkills) {
+      if (!dbIds.has(rs.definition.id)) {
+        data.push({
+          id: rs.definition.id,
+          name: rs.definition.name,
+          desc: rs.definition.description || '',
+          icon: 'Extension',
+          category: rs.definition.group || 'tool',
+          path: '',
+          tags: [],
+          status: rs.status || 'active',
+          version: undefined,
+          featured: false,
+          source: 'runtime',
+          installedAt: rs.registeredAt,
+          executable: true,
+          executionCount: rs.executionCount,
+          lastExecutedAt: rs.lastExecutedAt,
+        });
+      }
+    }
+  } catch {
+    // skillRegistry 可能还没初始化，仅返回 DB 数据
+  }
   return ok(res, data);
+});
+
+// POST /api/user-skills/rescan — 触发 skillRegistry 重新扫描技能目录
+router.post('/user-skills/rescan', async (_req: Request, res: Response) => {
+  try {
+    const { skillRegistry } = await import('../engine/skillRegistry.js');
+    // init() 有 initialized 保护，直接调用 scanSkillDirectories() 追加新技能
+    await skillRegistry.scanSkillDirectories();
+    const count = skillRegistry.getAllSkills().length;
+    logger.info(`[Skills] Rescan complete: ${count} skills registered`);
+    return ok(res, { count });
+  } catch (e) {
+    logger.error('[Skills] Rescan failed:', e);
+    return fail(res, BizCode.INTERNAL, `Rescan failed: ${e instanceof Error ? e.message : String(e)}`, 500);
+  }
 });
 
 // GET /api/user-skills/:id

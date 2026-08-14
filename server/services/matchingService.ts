@@ -14,7 +14,7 @@
  * - 匹配反馈记录与学习
  */
 
-import { getUserSkills, getUserSkillById } from '../dao/skills.js';
+import { getUserSkills, getUserSkillById, getBuiltinPatches } from '../dao/skills.js';
 import { BUILTIN_SKILLS } from '@src/types/skill-core';
 import { getFolderSkillsForMatching } from '../engine/skillRuntimeBridge.js';
 import { logger } from '../logger.js';
@@ -126,6 +126,7 @@ export function resetConfig(): MatchEngineRuntimeConfig {
 /**
  * 收集所有可用技能（内置 + 用户自建）
  * 返回统一格式数组
+ * 注意：会应用 builtin-status-patches 覆盖内置技能的默认状态
  */
 function collectAllSkills(): Array<{
   id: string;
@@ -148,8 +149,17 @@ function collectAllSkills(): Array<{
     status: string;
   }> = [];
 
+  // 拉取内置技能状态补丁（覆盖默认 active/available）
+  let builtinPatches: Record<string, string> = {};
+  try {
+    builtinPatches = getBuiltinPatches();
+  } catch {
+    // DB 不可用时跳过 patch，使用 BUILTIN_SKILLS 自带的默认 status
+  }
+
   // 内置技能
   for (const s of BUILTIN_SKILLS) {
+    const patched = builtinPatches[s.id] as string | undefined;
     skills.push({
       id: s.id,
       name: s.name,
@@ -158,7 +168,7 @@ function collectAllSkills(): Array<{
       tags: s.tags,
       detail: s.detail,
       category: s.category,
-      status: s.status,
+      status: patched ?? s.status,
     });
   }
 
@@ -434,6 +444,7 @@ export async function match(
 
   const allSkills = collectAllSkills();
   const activeSkills = allSkills.filter(s => s.status === 'active');
+  const activeSkillIds = new Set(activeSkills.map(s => s.id));
   const nameMap = buildSkillNameMap();
 
   let results: MatchResult[] = [];
@@ -441,13 +452,16 @@ export async function match(
   switch (matchMode) {
     case 'semantic': {
       const semanticResults = await semanticSearch(query, topK, threshold);
-      results = semanticResults.map(r => ({
-        skillId: r.skillId,
-        skillName: nameMap.get(r.skillId) ?? r.skillId,
-        score: r.similarity,
-        matchMode: 'semantic' as MatchMode,
-        reasons: [`语义相似度: ${r.similarity.toFixed(4)}`],
-      }));
+      // R2b-1：语义搜索结果也必须尊重技能启用/停用状态（停用的技能即使命中也不返回）
+      results = semanticResults
+        .filter(r => activeSkillIds.has(r.skillId))
+        .map(r => ({
+          skillId: r.skillId,
+          skillName: nameMap.get(r.skillId) ?? r.skillId,
+          score: r.similarity,
+          matchMode: 'semantic' as MatchMode,
+          reasons: [`语义相似度: ${r.similarity.toFixed(4)}`],
+        }));
       break;
     }
 
@@ -464,8 +478,9 @@ export async function match(
     }
 
     case 'hybrid': {
-      // 语义搜索
-      const semanticResults = await semanticSearch(query, topK * 2, 0);
+      // 语义搜索（停用技能即使命中也排除）
+      const semanticResults = (await semanticSearch(query, topK * 2, 0))
+        .filter(r => activeSkillIds.has(r.skillId));
       // 关键词搜索
       const keywordResults = keywordMatch(query, activeSkills, topK * 2, 0);
 
@@ -502,13 +517,13 @@ export async function match(
 
     case 'context': {
       const messages = contextMessages ?? [];
-      const contextResults = await contextSearch(
+      const contextResults = (await contextSearch(
         query,
         messages,
         topK,
         threshold,
         config.contextWindowSize
-      );
+      )).filter(r => activeSkillIds.has(r.skillId));
       results = contextResults.map(r => ({
         skillId: r.skillId,
         skillName: nameMap.get(r.skillId) ?? r.skillId,
@@ -524,7 +539,8 @@ export async function match(
 
     default: {
       // 未知模式，fallback 到 hybrid
-      const semanticResults = await semanticSearch(query, topK, threshold);
+      const semanticResults = (await semanticSearch(query, topK, threshold))
+        .filter(r => activeSkillIds.has(r.skillId));
       const keywordResults = keywordMatch(query, activeSkills, topK, 3);
       const merged = mergeHybridResults(
         semanticResults,

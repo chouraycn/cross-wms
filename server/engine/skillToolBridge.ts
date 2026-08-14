@@ -8,8 +8,26 @@ import { logger } from '../logger.js';
 import { skillRegistry } from './skillRegistry.js';
 import { createSkillContext } from './skillContextFactory.js';
 import { performSecurityChecks } from './skillSecurityGuard.js';
+import { getBuiltinPatches } from '../dao/skills.js';
 import type { RegisteredSkill, SkillContext, SkillResult } from '../types/skill-runtime.js';
 import type { ToolDefinition } from '../aiClient.js';
+
+/**
+ * 拉取当前 builtin status patches，供工具桥接层判断某技能是否被用户停用
+ * 被打 patch=available 的技能即使已在 skillRegistry 注册，也不会出现在 AI 工具列表/不可被执行
+ */
+function getDisabledBuiltinSkillIds(): Set<string> {
+  try {
+    const patches = getBuiltinPatches();
+    const disabled = new Set<string>();
+    for (const [id, status] of Object.entries(patches)) {
+      if (status === 'available') disabled.add(id);
+    }
+    return disabled;
+  } catch {
+    return new Set();
+  }
+}
 
 const SKILL_TOOL_PREFIX = 'skill_';
 
@@ -50,15 +68,23 @@ export interface OpenAIToolDefinition {
 /**
  * 将技能转换为工具定义列表
  *
+ * R2b-3：除 skillRegistry 内部 state 外，额外应用 builtin status patches —
+ *        被用户手动停用（patch=available）的内置技能不出现在 AI 工具列表里。
+ *
  * @param skills - 技能列表（可选，默认全部已注册技能）
  * @returns OpenAI 工具定义列表
  */
 export function getSkillToolDefinitions(skills?: RegisteredSkill[] | { allow?: string[]; deny?: string[]; elevated?: { enabled?: string } }): OpenAIToolDefinition[] {
+  const disabledBuiltinIds = getDisabledBuiltinSkillIds();
+  const isRunnableState = (s: RegisteredSkill) =>
+    (s.state === 'enabled' || s.state === 'active' || s.state === 'idle') &&
+    !disabledBuiltinIds.has(s.definition.id);
+
   if (!skills || Array.isArray(skills)) {
     const targetSkills = skills ?? skillRegistry.getAllSkills();
 
     return targetSkills
-      .filter((s) => s.state === 'enabled' || s.state === 'active' || s.state === 'idle')
+      .filter(isRunnableState)
       .map((s) => ({
         type: 'function' as const,
         function: {
@@ -75,7 +101,7 @@ export function getSkillToolDefinitions(skills?: RegisteredSkill[] | { allow?: s
   
   const targetSkills = skillRegistry.getAllSkills();
   return targetSkills
-    .filter((s) => s.state === 'enabled' || s.state === 'active' || s.state === 'idle')
+    .filter(isRunnableState)
     .map((s) => ({
       type: 'function' as const,
       function: {
@@ -142,6 +168,16 @@ export async function handleSkillToolCall(request: ToolCallRequest | { id: strin
       return {
         success: false,
         error: `技能 '${skillId}' 当前状态不可执行: ${skill.state}`,
+      };
+    }
+
+    // R2b-3：技能执行前再次核对 builtin status patches — 用户已停用（patch=available）的技能拒绝执行
+    const disabledBuiltinIds = getDisabledBuiltinSkillIds();
+    if (disabledBuiltinIds.has(skillId)) {
+      logger.info(`[SkillToolBridge] 拒绝执行已停用技能: ${skillId}`);
+      return {
+        success: false,
+        error: `技能 '${skill.definition.name || skillId}' 已被用户停用，如需使用请到「技能 → 内置」页面启用`,
       };
     }
 

@@ -23,7 +23,7 @@ export interface SkillLoadResult {
 }
 
 // 放宽：允许连字符，以兼容 openclaw 技能命名（如 gh-issues / diagram-maker / nano-pdf）
-const SKILL_ID_PATTERN = /^[a-z][a-z0-9_-]*$/;
+const SKILL_ID_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 
 function isValidSkillId(id: string): boolean {
   return SKILL_ID_PATTERN.test(id);
