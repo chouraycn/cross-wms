@@ -25,6 +25,34 @@ type QrState = {
   imageUrl: string;
 };
 
+/** 公众号凭证字段（对应后端 /wechat/credentials 端点） */
+const MP_FIELDS: Array<{
+  key: string;
+  label: string;
+  secret?: boolean;
+  placeholder?: string;
+  optional?: boolean;
+  hint?: string;
+}> = [
+  { key: 'app_id', label: '公众号 AppID', placeholder: 'wx 开头的 AppID' },
+  { key: 'app_secret', label: 'AppSecret', secret: true, placeholder: '公众号后台-开发-基本配置' },
+  { key: 'token', label: '服务器配置 Token（回调验签）', placeholder: '选填', optional: true },
+  {
+    key: 'encoding_aes_key',
+    label: 'EncodingAESKey（43 位，安全模式回调）',
+    placeholder: '选填',
+    optional: true,
+    hint: '与公众号后台「服务器配置」保持一致；安全模式下必填',
+  },
+  {
+    key: 'openid',
+    label: '默认接收用户 openid',
+    placeholder: '选填，用于主动推送',
+    optional: true,
+    hint: '公众号主动推送需要接收者 openid；回调收到的用户自动可用',
+  },
+];
+
 const PRIMARY_BUTTON_CLASS =
   'h-8 gap-1 rounded-[10px] bg-[#18181a] px-5 text-[12px] font-normal text-white hover:bg-[#303030]';
 const OUTLINE_BUTTON_CLASS =
@@ -37,6 +65,12 @@ export default function WechatSetup({
   binding: ChannelBindingRead;
   onChanged: () => void;
 }) {
+  const [mode, setMode] = useState<'qrcode' | 'mp'>('qrcode');
+  const [mpValues, setMpValues] = useState<Record<string, string>>({});
+  const [mpSaving, setMpSaving] = useState(false);
+  const configuredAppId =
+    (typeof binding.config_json?.app_id === 'string' && binding.config_json.app_id) || '';
+  const [mpEditing, setMpEditing] = useState(!configuredAppId);
   const [qr, setQr] = useState<QrState | null>(null);
   const [qrStatus, setQrStatus] = useState('');
   const [qrLoading, setQrLoading] = useState(false);
@@ -149,6 +183,33 @@ export default function WechatSetup({
     verifyCodeRef.current = code;
   }
 
+  /** 公众号凭证：校验必填 → POST /wechat/credentials（后端官方 API 探测通过才激活） */
+  async function saveMpCredentials() {
+    const required = MP_FIELDS.filter((f) => !f.optional);
+    const incomplete = required.some((f) => !String(mpValues[f.key] || '').trim());
+    if (incomplete) {
+      notify.error('AppID 与 AppSecret 均为必填');
+      return;
+    }
+    setMpSaving(true);
+    try {
+      const payload: Record<string, string> = { tenant_id: TENANT_ID };
+      MP_FIELDS.forEach((field) => {
+        const value = String(mpValues[field.key] || '').trim();
+        if (value) payload[field.key] = value;
+      });
+      await api.post(`/api/enterprise/channels/${binding.id}/wechat/credentials`, payload);
+      notify.success('公众号凭证已保存并校验通过');
+      setMpValues({});
+      setMpEditing(false);
+      onChanged();
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : '保存公众号凭证失败');
+    } finally {
+      setMpSaving(false);
+    }
+  }
+
   const sessionExpired = Boolean(
     binding.session_expired ?? binding.config_json?.session_expired,
   );
@@ -171,6 +232,34 @@ export default function WechatSetup({
 
   return (
     <>
+      {/* 接入方式：扫码（个人微信网关）/ 公众号凭证（官方 API） */}
+      <div className="mb-[12px] flex items-center gap-[6px]">
+        <button
+          type="button"
+          onClick={() => setMode('qrcode')}
+          className={
+            mode === 'qrcode'
+              ? 'h-7 rounded-[8px] bg-[#18181a] px-3 text-[12px] text-white'
+              : 'h-7 rounded-[8px] border border-[#e3e7f1] px-3 text-[12px] text-[#464c5e]'
+          }
+        >
+          扫码接入
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('mp')}
+          className={
+            mode === 'mp'
+              ? 'h-7 rounded-[8px] bg-[#18181a] px-3 text-[12px] text-white'
+              : 'h-7 rounded-[8px] border border-[#e3e7f1] px-3 text-[12px] text-[#464c5e]'
+          }
+        >
+          公众号凭证
+        </button>
+      </div>
+
+      {mode === 'qrcode' && (
+      <>
       {recovering && (
         <span className="flex items-center gap-[6px]">
           <StatusBadge tone="orange">恢复中</StatusBadge>
@@ -254,6 +343,70 @@ export default function WechatSetup({
               {qr.content}
             </code>
           </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {mode === 'mp' && (
+        <div className="flex flex-col gap-[12px] rounded-[10px] bg-[#fafbfc] p-[16px]">
+          <span className="text-[12px] leading-[1.6] text-[#858b9c]">
+            公众号接入：填公众号 AppID / AppSecret（官方 API，保存时校验凭证有效性）；Token 与
+            EncodingAESKey 用于消息回调（服务器配置 URL 填
+            <code className="mx-[2px] text-[#464c5e]">/api/webhook/channels/wechat</code>）。
+          </span>
+          {MP_FIELDS.map((field) => (
+            <label key={field.key} className="flex flex-col gap-[6px] text-[12px] text-[#464c5e]">
+              {field.label}
+              {field.optional && (
+                <span className="text-[11px] font-normal text-[#a0a6b8]">（选填）</span>
+              )}
+              <Input
+                type={field.secret ? 'password' : 'text'}
+                value={mpValues[field.key] || ''}
+                placeholder={field.placeholder || ''}
+                autoComplete="off"
+                onChange={(event) =>
+                  setMpValues((prev) => ({ ...prev, [field.key]: event.target.value }))
+                }
+                className="h-8 rounded-[10px] text-[12px]"
+              />
+              {field.hint && (
+                <span className="text-[11px] leading-[1.5] text-[#a0a6b8]">{field.hint}</span>
+              )}
+            </label>
+          ))}
+          <div className="flex justify-end gap-[8px]">
+            {configuredAppId && !mpEditing && (
+              <UIButton
+                variant="outline"
+                onClick={() => {
+                  setMpValues({
+                    app_id: configuredAppId,
+                    ...(typeof binding.config_json?.openid === 'string'
+                      ? { openid: binding.config_json.openid }
+                      : {}),
+                  });
+                  setMpEditing(true);
+                }}
+                className={OUTLINE_BUTTON_CLASS}
+              >
+                重新配置
+              </UIButton>
+            )}
+            <UIButton
+              onClick={() => void saveMpCredentials()}
+              disabled={mpSaving}
+              className={PRIMARY_BUTTON_CLASS}
+            >
+              {mpSaving ? '校验中…' : configuredAppId && !mpEditing ? '已配置' : '保存'}
+            </UIButton>
+          </div>
+          {configuredAppId && !mpEditing && (
+            <span className="text-[12px] text-[#464c5e]">
+              已配置公众号：<span className="text-[#858b9c]">{configuredAppId}</span>
+            </span>
+          )}
         </div>
       )}
     </>
