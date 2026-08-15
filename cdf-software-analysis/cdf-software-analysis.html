@@ -243,8 +243,8 @@ code{background:var(--bg3);padding:2px 7px;border-radius:4px;font-family:'SF Mon
     <ul>
       <li><strong>codemod 不可靠</strong>（2026-08-11）：multiline 裸对象截断丢 <code>{</code>；局部 <code>const ok</code> 遮蔽导入→运行时崩溃。API 信封迁移必须<strong>人工逐文件</strong> + eslint 0 error + 查 ok 冲突。</li>
       <li><strong>knip 不可信</strong>：<code>ignoreFiles</code> 含 <code>scripts/**</code> 未覆盖 <code>extensions/</code> → 「Unused dependencies」列表不可信、不可盲删；删依赖前须手动核验 <code>extensions/</code> <code>scripts/</code> <code>build-server.mjs</code> external、dist 产物。</li>
-      <li><strong>工作区不洁</strong>：2,754 modified + 395 untracked + <code>openclaw/</code> <code>StaffDeck-main/</code> 子模块 drift，须作为后续清理前置项。</li>
-      <li><strong>engine 测试隔离阻塞</strong>：851 unresolved imports 阻塞（须 CI 先 build openclaw）。</li>
+    <li><strong>工作区不洁</strong>：记忆里记的「2,754 modified」为过时；实测仅 <strong>14 个未提交文件</strong> + <code>openclaw/</code> <code>StaffDeck-main/</code> 子模块 drift。</li>
+    <li><strong>engine 测试隔离</strong>：294 个 engine 测试依赖 <code>openclaw/dist/plugin-sdk/*.js</code>。CI（<code>ci.yml</code>）已自动 build openclaw 生成 dist → <code>test:engine</code> 硬门禁；无子模块时 <code>ensure-openclaw-mock.cjs</code> 兜底。本地 vendored 快照未触发 build、缺 dist 属预期。</li>
     </ul>
   </div>
 </section>
@@ -254,7 +254,7 @@ code{background:var(--bg3);padding:2px 7px;border-radius:4px;font-family:'SF Mon
   <h2>四、技术债务</h2>
   <div class="card-grid">
     <div class="card"><h4>状态管理未收敛</h4><p>Context + Zustand + useState 三种并存，ChatContext 过于庞大。旧稿建议「统一 Zustand + 原子化」仍未落地。</p></div>
-    <div class="card"><h4>大文件维护困难</h4><p><code>server/engine/toolRegistry.ts</code> ~2,201 行、<code>server/routes/chat.ts</code> ~2,200 行、<code>ChatMessageList.tsx</code> ~2,112 行。单一文件过大。</p></div>
+    <div class="card"><h4>大文件维护困难（2026-08-15 实测修正）</h4><p><code>chat.ts</code> 已拆至 <strong>85 行</strong>；<code>toolRegistry.ts</code> 现 <strong>1,104 行</strong>（属 vendored OpenClaw 核心，硬分叉代码，<span class="note">不宜重构</span>，会与上游 cherry-pick 冲突）；<code>ChatMessageList.tsx</code> <strong>899 行</strong>（前端核心，拆分有 Vite .tsx 白屏风险）。余下真正 cdf 自有大文件有限。</p></div>
     <div class="card"><h4>pre-commit 门禁失效</h4><p>钩子跑全量 tsc → OOM/慢 + fork 既有错误 fail；当前靠 <code>--no-verify</code> 绕过。应切 <code>tsgo</code> 增量。</p></div>
     <div class="card"><h4>构建产物管理</h4><p><code>server_dist/</code> <code>dist/</code> 被 git 跟踪又是构建产物，应加 .gitignore、CI 重建。</p></div>
   </div>
@@ -271,23 +271,27 @@ code{background:var(--bg3);padding:2px 7px;border-radius:4px;font-family:'SF Mon
 <!-- 5. 优化方向 -->
 <section>
   <h2>五、优化方向（按 P0/P1/P2 分层）</h2>
-  <h3>5.1 P0 — 数据链路与生态接入</h3>
+  <div class="callout">
+    <h4>状态更正（2026-08-15 实测，推翻本节初稿标注）</h4>
+    <p>本节初稿把下方 P1/P2 标为「待做」，但代码核验发现它们<strong>均已实现并提交</strong>：P1-1 技能数据链路 <code>skillRuntimeBridge.ts</code>（P0-A）已打通三份技能表示；P1-3 大文件拆分 <code>chat.ts</code> 已拆至 85 行；P1-2 测试隔离 <code>vitest.config.engine.ts</code> 已就绪（<strong>CI 已自动 build openclaw → <code>test:engine</code> 硬门禁 + mock 兜底</strong>；本地 vendored 快照未触发 build、缺 <code>openclaw/dist</code> 属预期）；P2-1 智能技能路由 <code>skillRouter.ts</code>（288 行）+ <code>matchingService</code> + <code>embedding-providers(onnxProvider)</code> + 语义 <code>modelSelector</code>(1106 行) 已提交（<code>b888ea5e</code> / <code>v1.7.205</code>），且已接入 <code>chatService.ts</code> / <code>runChatSession.ts</code> 主链路。熔断/退避（BackoffCoordinator 概念）已由 <code>channel-circuit-breaker.ts</code> + <code>forced-consult-coordinator.ts</code> + <code>infra/retry.ts</code> 落地。下方仅保留<strong>真正剩余</strong>的工作项。</p>
+  </div>
+  <h3>5.1 P0 — 数据链路与生态接入（待推进）</h3>
   <ol>
     <li><strong>数据链路</strong>：打通 WMS 核心业务数据闭环（库存/出入库/调拨）。</li>
-    <li><strong>多端集成</strong>：飞书 / 企微 / 钉钉 接入（飞书 SDK 已引入）。</li>
-    <li><strong>国产模型接入</strong>：DeepSeek / Moonshot / MiniMax（已在 AI 集成层）。</li>
+    <li><strong>多端集成</strong>：飞书 / 企微 / 钉钉 接入（飞书 SDK 已引入，待深化）。</li>
+    <li><strong>国产模型接入</strong>：DeepSeek / Moonshot / MiniMax（已在 AI 集成层，待验证调通）。</li>
   </ol>
-  <h3>5.2 P1 — 高价值能力导入</h3>
+  <h3>5.2 P1 — 高价值能力导入（已基本完成，仅余收口）</h3>
   <ol>
-    <li>导入 openclaw <strong>discovery / research</strong> 方法论为高价值 skill。</li>
-    <li>测试隔离 CI：先 build openclaw 解决 851 unresolved imports，再跑 <code>test:engine</code>。</li>
-    <li>大文件拆分（toolRegistry / chat.ts / StaffDeckPortal），降低单点风险。</li>
+    <li><span class="tag t-done">已实现</span> openclaw discovery 基础设施已镜像（<code>server/engine/skills/discovery</code>）；技能数据链路 <code>skillRuntimeBridge.ts</code> 已打通三份技能表示。余：确认是否缺独立「research 方法论」skill。</li>
+    <li><span class="tag t-done">CI 已收口</span> 测试隔离已闭合：<code>ci.yml</code> 自动 build openclaw → <code>test:engine</code> 硬门禁（无子模块时 <code>ensure-openclaw-mock.cjs</code> 兜底）；本地缺 <code>openclaw/dist</code> 属预期（vendored 快照未触发 CI build 步骤）。</li>
+    <li><span class="tag t-done">已实现</span> 大文件拆分 <code>chat.ts</code> 已拆至 85 行；<code>toolRegistry.ts</code>(1,104) 属 vendored 核心不宜重构。</li>
   </ol>
-  <h3>5.3 P2 — 智能技能路由与长期</h3>
+  <h3>5.3 P2 — 智能技能路由（已落地）与长期</h3>
   <ol>
-    <li>吸收 openclaw 方法论，构建 <strong>cdf 独有智能技能路由</strong>（semantic-router embedding + BackoffCoordinator 统一）。</li>
+    <li><span class="tag t-done">已实现 · 实机验证</span> cdf 独有智能技能路由 <code>skillRouter.ts</code>（关键词保底 + 语义增强去重，ONNX 未就绪自动降级）+ <code>matchingService</code> + <code>embedding-providers</code>。已补专属单测（<code>skillRouter.test.ts</code> 11 用例全绿）。<strong>2026-08-15 实机验证</strong>：本地 <code>all-MiniLM-L6-v2</code> 随包就绪，<code>server/index.ts</code> 启动调 <code>initOnnxEmbedding()</code> 预热 → <code>getOnnxStatus()='ready'</code> → <code>isSemanticAvailable()=true</code>，<code>embedText</code> 产出真实 384 维语义向量（跨句余弦≈-0.05），语义增强在运行时确生效，非永久降级。</li>
     <li>7 部分架构演进路线图持续落地。</li>
-    <li>测试覆盖率提升、依赖清理（须人工核验 knip 结果）。</li>
+    <li>测试覆盖率提升（核心引擎补单测）、依赖清理（须人工核验 knip 结果）。</li>
     <li>插件生态 / 云端同步 / 多用户（长期）。</li>
   </ol>
 </section>
@@ -304,7 +308,7 @@ code{background:var(--bg3);padding:2px 7px;border-radius:4px;font-family:'SF Mon
   </ol>
   <h3>6.2 中期（1–2 月）</h3>
   <ol>
-    <li>engine 测试隔离 CI（先 build openclaw）。</li>
+    <li>engine 测试隔离 CI <span class="tag t-done">已收口</span>（ci.yml 自动 build openclaw → test:engine + mock 兜底）。</li>
     <li>大文件拆分 + 前端路由懒加载 / 代码分割（降 bundle）。</li>
     <li>核心引擎（reactExecutor / toolRegistry / aiClient）补单元测试。</li>
     <li>状态管理收敛为 Zustand 原子化。</li>

@@ -61,7 +61,10 @@
 - **P1-2 UI 视觉统一（Card→Box）**：31/42 页完成（纯容器批已清零；剩 5 复杂页手工 + SystemMonitorPage KPI 评估 + MetricsPage 用户任务 defer）。
 - **⚠️ codemod 不可靠(2026-08-11)**：multiline 裸对象截断丢 `{`；局部 `const ok` 遮蔽导入→运行时崩溃。API 信封迁移必须人工逐文件 + eslint 0 error + 查 `ok` 冲突。
 - **⚠️ git stash 恢复坑(2026-08-13)**：多 stash 下裸 `git stash pop` 易戳错。铁律补丁：pop 前 `git stash show --name-only stash@{N}` 确认；恢复用 `checkout stash@{N} -- <files>` 而非 pop。当前存 stash@{0}=用户 metrics in-flight，勿动。
-- **engine 测试隔离**：`vitest.config.engine.ts` + `test:engine` 就绪；851 unresolved imports 阻塞（须 CI 先 build openclaw）。
+- **engine 测试隔离（CI 已收口，2026-08-15 核验）**：`vitest.config.engine.ts` + `test:engine` 就绪；`ci.yml` 自动 `build:packages` 生成 `openclaw/dist` → `test:engine` 硬门禁（无子模块时 `ensure-openclaw-mock.cjs` 兜底，`continue-on-error`）。本地 vendored 快照未触发 CI build、缺 `openclaw/dist` 属预期，无需手动构建。默认 `npm test` 不受影响。旧记「851 / 294 unresolved imports 阻塞」均已过时。
+- **P2-1 智能技能路由 ✅ 已实现并提交 · 实机验证可用**（2026-08-15 核验）：`server/engine/skillRouter.ts`(288行, 关键词保底+语义增强去重, ONNX未就绪自动降级) + `matchingService` + `server/engine/embedding-providers`(onnxProvider) + 语义 `server/routes/modelSelector.ts`(1106行)；已接入 `chatService.ts`/`runChatSession.ts` 主链路。`server/index.ts:1081` 启动预热 `initOnnxEmbedding()` → `getOnnxStatus()='ready'` → `isSemanticAvailable()=true` 启用 context 语义增强（非死锁，非永久降级）。熔断/退避由 `channel-circuit-breaker.ts`+`forced-consult-coordinator.ts`+`infra/retry.ts` 落地。**⚠️ 别再把 P2-1 当「待做」**。已补 `server/__tests__/skillRouter.test.ts`(11用例全绿)。**实机验证(2026-08-15, vitest 临时测试已删)**：本地 `assets/models/all-MiniLM-L6-v2`(model.onnx 22.9MB+tokenizer+vocab+config) 随包就绪，`onnxruntime-node` 已装，`initOnnxEmbedding()` 后 status=ready，`embedText` 产出真实 384 维语义向量，跨句余弦≈-0.05（确为真实语义向量）。
+- **P1-1 技能数据链路 ✅**：`server/engine/skillRuntimeBridge.ts`(P0-A) 已打通三份技能表示(builtin/user/folder)；openclaw `discovery` 基础设施已镜像(`server/engine/skills/discovery`)。
+- **⚠️ 旧记「工作区不洁 2,754 modified」已过时**：2026-08-15 实测 `git status --short` 仅 14 文件。勿再据此触发"清理前置"流程。
 - `server/engine`：11,537 .ts / 272.9 万行（测试占57%），不宜回退 submodule。
 
 ## 统计陷阱 & e2e / knip
