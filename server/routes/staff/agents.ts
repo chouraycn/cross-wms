@@ -24,6 +24,7 @@ import { Router, type Request, type Response } from 'express';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import * as agentDao from '../../dao/staff/staffAgentDao.js';
 import * as skillDao from '../../dao/staff/staffSkillDao.js';
+import * as toolDao from '../../dao/staff/staffToolDao.js';
 import * as kbDao from '../../dao/staff/staffKnowledgeBaseDao.js';
 import * as modelConfigDao from '../../dao/staff/staffModelConfigDao.js';
 import { autoSelectModel, type AutoSelectResult } from '../modelSelector.js';
@@ -340,6 +341,83 @@ router.delete('/:agentId/resources', (req: Request, res: Response) => {
     return;
   }
   res.json({ code: 0, data: null, message: 'ok' });
+});
+
+// ===================== GET /:agentId/capabilities — 能力清单（LLM 可自动发现） =====================
+// 标准见 deliverables/2026-08-15-数字员工能力闭环标准.md §3
+// 聚合：技能（绑定+详情）/ 工具（员工工具目录）/ MCP（绑定服务器 + 工具叶子）
+router.get('/:agentId/capabilities', (req: Request, res: Response) => {
+  const tenantId = tenantOf(req);
+  const agentId = req.params.agentId;
+
+  // 技能：显式绑定 + 详情（含 content_json 里的 trigger 声明，若有）
+  const skillBindings = agentDao.listAgentResourceBindings(tenantId, agentId, 'skill');
+  const skills = skillBindings
+    .map((b: any) => {
+      try {
+        const row = skillDao.getSkillBySkillId(tenantId, String(b.resource_id));
+        if (!row) return null;
+        let triggers: string[] = [];
+        try {
+          const content = JSON.parse(String(row.content_json || '{}'));
+          const t = content?.metadata?.crosswms?.trigger || content?.trigger;
+          if (typeof t === 'string') triggers = t.split('/').map((s: string) => s.trim()).filter(Boolean);
+          else if (Array.isArray(t)) triggers = t.map(String);
+        } catch {
+          /* 无 trigger 声明则留空 */
+        }
+        return {
+          id: row.skill_id,
+          name: row.name,
+          description: row.description || '',
+          version: row.version,
+          status: row.status,
+          triggers,
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  // 工具：员工工具目录（sd_tools，tenant 维度；与 staffChatExecutor 注入口径一致）
+  let tools: unknown[] = [];
+  try {
+    tools = toolDao
+      .listTools(tenantId)
+      .filter((t) => t.enabled === 1)
+      .map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description || '',
+        toolType: t.tool_type,
+        method: t.method,
+        url: t.url,
+        mcpServerId: t.mcp_server_id,
+        mcpToolName: t.mcp_tool_name,
+      }));
+  } catch {
+    tools = [];
+  }
+
+  // MCP：绑定服务器 → 工具叶子
+  const mcpBindings = agentDao.listAgentResourceBindings(tenantId, agentId, 'mcp');
+  const mcps = mcpBindings
+    .map((b: any) => {
+      try {
+        const serverId = String(b.resource_id);
+        const leaves = toolDao.getToolsByMcpServer(serverId).map((t) => ({
+          name: t.mcp_tool_name || t.name,
+          description: t.description || '',
+        }));
+        return { serverId, tools: leaves };
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  res.json({ code: 0, data: { agentId, skills, tools, mcps }, message: 'ok' });
 });
 
 // ===================== GET /:agentId/skill-branches =====================
