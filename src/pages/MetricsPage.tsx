@@ -364,205 +364,195 @@ const MetricsPage: React.FC = () => {
             </Grid>
           </Grid>
 
-          <Card sx={{ mt: 3, backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}` }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: gs.textPrimary }}>
-                <TimerIcon sx={{ mr: 1, fontSize: 20 }} />
-                系统信息
-              </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableBody>
-                    <TableRow>
-                      <TableCell sx={{ color: gs.textSecondary }}>运行时间</TableCell>
-                      <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics ? formatDuration(currentMetrics.uptime) : '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ color: gs.textSecondary }}>进程 ID</TableCell>
-                      <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics?.process?.pid ?? '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ color: gs.textSecondary }}>进程内存</TableCell>
-                      <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics?.process?.memoryUsage != null ? formatBytes(currentMetrics.process.memoryUsage) : '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ color: gs.textSecondary }}>进程 CPU</TableCell>
-                      <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics?.process?.cpuUsage != null ? `${currentMetrics.process.cpuUsage.toFixed(1)}%` : '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ color: gs.textSecondary }}>CPU 负载</TableCell>
-                      <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics?.cpu?.loadAverage?.length ? currentMetrics.cpu.loadAverage.slice(0, 3).join(', ') : '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ color: gs.textSecondary }}>可用内存</TableCell>
-                      <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics?.memory?.available != null ? formatBytes(currentMetrics.memory.available) : '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell sx={{ color: gs.textSecondary }}>磁盘剩余</TableCell>
-                      <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                        {currentMetrics?.disk?.free != null ? formatBytes(currentMetrics.disk.free) : '-'}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 } }>
+            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: gs.textPrimary }}>
+              <TimerIcon sx={{ mr: 1, fontSize: 20 }} />
+              系统信息
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableBody>
+                  <TableRow>
+                    <TableCell sx={{ color: gs.textSecondary }}>运行时间</TableCell>
+                    <TableCell align="right" sx={{ color: gs.textPrimary }}>
+                      {currentMetrics ? formatDuration(currentMetrics.uptime) : '-'}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ color: gs.textSecondary }}>进程 ID</TableCell>
+                    <TableCell align="right" sx={{ color: gs.textPrimary }}>
+                      {currentMetrics?.process?.pid ?? '-'}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ color: gs.textSecondary }}>进程内存</TableCell>
+                    <TableCell align="right" sx={{ color: gs.textPrimary }}>
+                      {currentMetrics?.process?.memoryUsage != null ? formatBytes(currentMetrics.process.memoryUsage) : '-'}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ color: gs.textSecondary }}>进程 CPU</TableCell>
+                    <TableCell align="right" sx={{ color: gs.textPrimary }}>
+                      {currentMetrics?.process?.cpuUsage != null ? `${currentMetrics.process.cpuUsage.toFixed(1)}%` : '-'}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ color: gs.textSecondary }}>CPU 负载</TableCell>
+                    <TableCell align="right" sx={{ color: gs.textPrimary }}>
+                      {currentMetrics?.cpu?.loadAverage?.length ? currentMetrics.cpu.loadAverage.slice(0, 3).join(', ') : '-'}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ color: gs.textSecondary }}>可用内存</TableCell>
+                    <TableCell align="right" sx={{ color: gs.textPrimary }}>
+                      {currentMetrics?.memory?.available != null ? formatBytes(currentMetrics.memory.available) : '-'}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ color: gs.textSecondary }}>磁盘剩余</TableCell>
+                    <TableCell align="right" sx={{ color: gs.textPrimary }}>
+                      {currentMetrics?.disk?.free != null ? formatBytes(currentMetrics.disk.free) : '-'}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
 
-          <Card sx={{ mt: 3, backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}` }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: gs.textPrimary }}>
-                <TrendingUpIcon sx={{ mr: 1, fontSize: 20 }} />
-                历史趋势（最近 60 分钟）
-              </Typography>
-              {historyMetrics.length > 0 ? (
-                <Grid container spacing={3}>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>CPU 使用率趋势</Typography>
-                    <MiniChart data={cpuHistory} color={theme.palette.primary.main} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>内存使用率趋势</Typography>
-                    <MiniChart data={memoryHistory} color={theme.palette.secondary.main} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>磁盘使用率趋势</Typography>
-                    <MiniChart data={diskHistory} color={theme.palette.info.main} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>网络流量趋势</Typography>
-                    <MiniChart data={networkHistory} color={theme.palette.success.main} />
-                  </Grid>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 } }>
+            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: gs.textPrimary }}>
+              <TrendingUpIcon sx={{ mr: 1, fontSize: 20 }} />
+              历史趋势（最近 60 分钟）
+            </Typography>
+            {historyMetrics.length > 0 ? (
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>CPU 使用率趋势</Typography>
+                  <MiniChart data={cpuHistory} color={theme.palette.primary.main} />
                 </Grid>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>暂无历史数据</Typography>
-              )}
-            </CardContent>
-          </Card>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>内存使用率趋势</Typography>
+                  <MiniChart data={memoryHistory} color={theme.palette.secondary.main} />
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>磁盘使用率趋势</Typography>
+                  <MiniChart data={diskHistory} color={theme.palette.info.main} />
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>网络流量趋势</Typography>
+                  <MiniChart data={networkHistory} color={theme.palette.success.main} />
+                </Grid>
+              </Grid>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>暂无历史数据</Typography>
+            )}
+          </Box>
         </Grid>
 
         <Grid item xs={12} md={4}>
           <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: gs.textPrimary }}>自定义指标</Typography>
 
-          <Card sx={{ backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}` }}>
-            <CardContent>
-              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2, color: gs.textPrimary }}>
-                <ReplayIcon sx={{ mr: 1, fontSize: 18 }} />
-                记录新指标
-              </Typography>
-              {submitSuccess && (
-                <Alert severity="success" sx={{ mb: 2 }}>指标记录成功</Alert>
-              )}
-              <TextField
-                label="指标名称"
-                fullWidth
-                value={customMetricName}
-                onChange={(e) => setCustomMetricName(e.target.value)}
-                sx={{ mb: 2 }}
-                size="small"
-              />
-              <TextField
-                label="指标值"
-                type="number"
-                fullWidth
-                value={customMetricValue}
-                onChange={(e) => setCustomMetricValue(e.target.value)}
-                sx={{ mb: 2 }}
-                size="small"
-              />
-              <TextField
-                label="标签 (可选，JSON)"
-                fullWidth
-                value={customMetricLabels}
-                onChange={(e) => setCustomMetricLabels(e.target.value)}
-                sx={{ mb: 2 }}
-                size="small"
-                helperText="例如: {type: 'test'}"
-              />
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={handleRecordCustomMetric}
-                disabled={submitting}
-                startIcon={submitting ? <CircularProgress size={16} /> : <ReplayIcon />}
-              >
-                {submitting ? '提交中...' : '记录指标'}
-              </Button>
-            </CardContent>
-          </Card>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 } }>
+            <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2, color: gs.textPrimary }}>
+              <ReplayIcon sx={{ mr: 1, fontSize: 18 }} />
+              记录新指标
+            </Typography>
+            {submitSuccess && (
+              <Alert severity="success" sx={{ mb: 2 }}>指标记录成功</Alert>
+            )}
+            <TextField
+              label="指标名称"
+              fullWidth
+              value={customMetricName}
+              onChange={(e) => setCustomMetricName(e.target.value)}
+              sx={{ mb: 2 }}
+              size="small"
+            />
+            <TextField
+              label="指标值"
+              type="number"
+              fullWidth
+              value={customMetricValue}
+              onChange={(e) => setCustomMetricValue(e.target.value)}
+              sx={{ mb: 2 }}
+              size="small"
+            />
+            <TextField
+              label="标签 (可选，JSON)"
+              fullWidth
+              value={customMetricLabels}
+              onChange={(e) => setCustomMetricLabels(e.target.value)}
+              sx={{ mb: 2 }}
+              size="small"
+              helperText="例如: {type: 'test'}"
+            />
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleRecordCustomMetric}
+              disabled={submitting}
+              startIcon={submitting ? <CircularProgress size={16} /> : <ReplayIcon />}
+            >
+              {submitting ? '提交中...' : '记录指标'}
+            </Button>
+          </Box>
 
-          <Card sx={{ mt: 3, backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}` }}>
-            <CardContent>
-              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2, color: gs.textPrimary }}>指标列表</Typography>
-              {customMetricNames.length > 0 ? (
-                <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
-                  {customMetricNames.map((name) => (
-                    <Button
-                      key={name}
-                      fullWidth
-                      variant={selectedCustomMetric?.name === name ? 'contained' : 'outlined'}
-                      onClick={() => handleLoadCustomMetric(name)}
-                      sx={{ justifyContent: 'flex-start', mb: 1 }}
-                    >
-                      {name}
-                    </Button>
-                  ))}
-                </Box>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>暂无自定义指标</Typography>
-              )}
-            </CardContent>
-          </Card>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 } }>
+            <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2, color: gs.textPrimary }}>指标列表</Typography>
+            {customMetricNames.length > 0 ? (
+              <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                {customMetricNames.map((name) => (
+                  <Button
+                    key={name}
+                    fullWidth
+                    variant={selectedCustomMetric?.name === name ? 'contained' : 'outlined'}
+                    onClick={() => handleLoadCustomMetric(name)}
+                    sx={{ justifyContent: 'flex-start', mb: 1 }}
+                  >
+                    {name}
+                  </Button>
+                ))}
+              </Box>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>暂无自定义指标</Typography>
+            )}
+          </Box>
 
           {selectedCustomMetric && (
-            <Card sx={{ mt: 3, backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}` }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="subtitle1" fontWeight={600} sx={{ color: gs.textPrimary }}>
-                    {selectedCustomMetric.name}
-                  </Typography>
-                  <Button size="small" onClick={() => setSelectedCustomMetric(null)}>关闭</Button>
-                </Box>
-                {selectedCustomMetric.records.length > 0 ? (
-                  <TableContainer sx={{ maxHeight: 250 }}>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ color: gs.textSecondary }}>时间</TableCell>
-                          <TableCell sx={{ color: gs.textSecondary }} align="right">值</TableCell>
+            <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 } }>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ color: gs.textPrimary }}>
+                  {selectedCustomMetric.name}
+                </Typography>
+                <Button size="small" onClick={() => setSelectedCustomMetric(null)}>关闭</Button>
+              </Box>
+              {selectedCustomMetric.records.length > 0 ? (
+                <TableContainer sx={{ maxHeight: 250 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ color: gs.textSecondary }}>时间</TableCell>
+                        <TableCell sx={{ color: gs.textSecondary }} align="right">值</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {selectedCustomMetric.records.slice(-20).reverse().map((record, index) => (
+                        <TableRow key={index}>
+                          <TableCell sx={{ color: gs.textPrimary }}>
+                            {formatTimestamp(record.timestamp)}
+                          </TableCell>
+                          <TableCell align="right" sx={{ color: gs.textPrimary }}>
+                            {record.value}
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedCustomMetric.records.slice(-20).reverse().map((record, index) => (
-                          <TableRow key={index}>
-                            <TableCell sx={{ color: gs.textPrimary }}>
-                              {formatTimestamp(record.timestamp)}
-                            </TableCell>
-                            <TableCell align="right" sx={{ color: gs.textPrimary }}>
-                              {record.value}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Typography color="text.secondary" align="center" sx={{ py: 4 }}>暂无数据</Typography>
-                )}
-              </CardContent>
-            </Card>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>暂无数据</Typography>
+              )}
+            </Box>
           )}
         </Grid>
       </Grid>
