@@ -1,7 +1,10 @@
 import React, { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo, Suspense, Profiler } from 'react';
 import { HashRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, useTheme } from '@mui/material';
+import { CssBaseline, Box, useTheme, IconButton, Typography, Paper, Stack, Button, Tooltip } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './components/Layout/Sidebar';
 import GlobalActionsBar from './components/Layout/GlobalActionsBar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
@@ -26,18 +29,410 @@ import { recordRender, markPhase, endPhase } from './services/performanceTelemet
 import SettingsGroupsDialog from './components/Layout/SettingsGroupsDialog';
 const SettingsPopover = React.lazy(() => import('./components/Layout/SettingsPopover'));
 
+// ===================== 白屏兜底：全局可视错误横幅 + safeLazy =====================
+// 捕获 ErrorBoundary 无法覆盖的错误：
+//   1. 微任务 / setTimeout / 原生事件回调 里的同步抛错 (window.onerror)
+//   2. async 函数 / import() / Promise 未处理 rejection (window.onunhandledrejection)
+// 即使 React 整树崩掉，也至少在页面上看到明确错误名 + 详情，不再是纯白屏。
+
+type GlobalErrorItem = {
+  id: number;
+  kind: 'error' | 'rejection';
+  message: string;
+  detail: string;
+  time: number;
+};
+
+let _globalErrorBannerPush: null | ((e: GlobalErrorItem) => void) = null;
+let _errorSeq = 0;
+
+function pushGlobalError(kind: 'error' | 'rejection', message: string, detail?: unknown) {
+  const detailText = (() => {
+    if (detail == null) return '';
+    if (detail instanceof Error) {
+      const s = detail.stack || String(detail);
+      return `${String(detail)}\n${s.includes(detail.message) ? '' : s}`;
+    }
+    try {
+      if (typeof detail === 'object') return JSON.stringify(detail, null, 2);
+      return String(detail);
+    } catch {
+      return String(detail);
+    }
+  })();
+  const item: GlobalErrorItem = {
+    id: ++_errorSeq,
+    kind,
+    message,
+    detail: detailText,
+    time: Date.now(),
+  };
+  ((window as unknown) as Record<string, unknown>).__globalErrors =
+    ((window as unknown) as Record<string, unknown>).__globalErrors || [];
+  ((window as unknown) as Record<string, GlobalErrorItem[]>).__globalErrors.push(item);
+  try {
+    // eslint-disable-next-line no-console
+    console.error(`[${kind}]`, message, detail ?? '');
+  } catch { /* 兜底：全局错误记录自身不抛 */ }
+  _globalErrorBannerPush?.(item);
+}
+
+/** 全局可视错误横幅（固定在视口顶部，z-index 极高，覆盖任何内容） */
+const GlobalErrorBanner: React.FC = () => {
+  const [errors, setErrors] = useState<GlobalErrorItem[]>(() => {
+    const prev = ((window as unknown) as Record<string, GlobalErrorItem[]>).__globalErrors || [];
+    return [...prev];
+  });
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    _globalErrorBannerPush = (e) => {
+      setErrors((list) => [...list, e]);
+      setExpandedId((cur) => cur ?? e.id);
+      setCollapsed(false);
+    };
+
+    const origError = window.onerror;
+    window.onerror = function globalAppOnError(message, source, lineno, colno, error) {
+      const msg = (typeof message === 'string' ? message : String(message)) || 'Unknown error';
+      pushGlobalError(
+        'error',
+        `${msg}${source ? ` (${source}:${lineno ?? '?'}:${colno ?? '?'})` : ''}`,
+        error ?? { source, lineno, colno },
+      );
+      if (typeof origError === 'function') {
+        try { origError.apply(window, [message as any, source, lineno as any, colno as any, error as any]); } catch { /* 兜底 */ }
+      }
+      return true;
+    };
+
+    const origRejection = window.onunhandledrejection;
+    window.onunhandledrejection = function globalAppOnUnhandledRejection(ev: PromiseRejectionEvent) {
+      let msg = 'Unhandled Promise rejection';
+      let detail: unknown = ev.reason;
+      if (ev.reason instanceof Error) {
+        msg = ev.reason.message || String(ev.reason);
+      } else if (typeof ev.reason === 'string') {
+        msg = ev.reason;
+      } else if (ev.reason && typeof (ev.reason as any).message === 'string') {
+        msg = String((ev.reason as any).message);
+      }
+      if (/dynamically imported module/i.test(msg) || /chunk/i.test(msg) || /Failed to fetch/i.test(msg)) {
+        msg = '页面脚本加载失败（chunk 网络/缓存异常）：' + msg;
+      }
+      pushGlobalError('rejection', msg, detail);
+      try { ev.preventDefault?.(); } catch { /* 兜底 */ }
+      if (typeof origRejection === 'function') {
+        try { origRejection.call(window, ev as any); } catch { /* 兜底 */ }
+      }
+    };
+
+    return () => {
+      if (_globalErrorBannerPush === pushGlobalError as unknown as typeof _globalErrorBannerPush) {
+        _globalErrorBannerPush = null;
+      }
+      window.onerror = origError || null;
+      window.onunhandledrejection = origRejection || null;
+    };
+  }, []);
+
+  if (errors.length === 0) return null;
+
+  return (
+    <Box
+      data-testid="global-error-banner"
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 99999,
+        boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+      }}
+    >
+      <Stack spacing={0.5} sx={{ bgcolor: '#fff', p: 0.75 }}>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1.5, py: 0.75, bgcolor: '#B91C1C', color: '#fff', borderRadius: '6px' }}>
+          <BugReportIcon fontSize="small" sx={{ color: '#fff' }} />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+              检测到 {errors.length} 个未捕获错误（不再白屏）。点击「重试」「展开」或在控制台查看详情。
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title="展开/收起错误详情">
+              <Button
+                size="small"
+                variant="outlined"
+                sx={{
+                  color: '#fff',
+                  borderColor: 'rgba(255,255,255,0.45)',
+                  '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' },
+                  py: 0.25,
+                }}
+                onClick={() => setCollapsed((c) => !c)}
+              >
+                {collapsed ? '展开' : '收起'}
+              </Button>
+            </Tooltip>
+            <Tooltip title="刷新本窗口（恢复路由默认：/chat）">
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<RefreshIcon fontSize="small" />}
+                sx={{
+                  bgcolor: '#fff',
+                  color: '#B91C1C',
+                  '&:hover': { bgcolor: '#F9FAFB' },
+                  py: 0.25,
+                }}
+                onClick={() => {
+                  setErrors([]);
+                  setExpandedId(null);
+                  if (window.location.hash !== '#/chat') {
+                    window.location.hash = '/chat';
+                  }
+                  setTimeout(() => window.location.reload(), 30);
+                }}
+              >
+                重试
+              </Button>
+            </Tooltip>
+            <Tooltip title="暂不显示">
+              <IconButton
+                size="small"
+                sx={{ color: '#fff', p: 0.25 }}
+                onClick={() => setErrors([])}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Stack>
+
+        {!collapsed && errors.slice(-5).map((e, idx) => {
+          const realIdx = errors.length - 5 + idx;
+          const visible = errors.slice(-5);
+          const item = visible[idx];
+          const _ = realIdx; void _;
+          const isExpanded = expandedId === item.id;
+          const isError = item.kind === 'error';
+          return (
+            <Paper
+              key={item.id}
+              elevation={0}
+              sx={{
+                border: `1px solid ${isError ? '#FCA5A5' : '#FDBA74'}`,
+                borderRadius: '6px',
+                bgcolor: isError ? '#FEF2F2' : '#FFF7ED',
+                overflow: 'hidden',
+              }}
+            >
+              <Stack direction="row" spacing={1} sx={{ px: 1.5, py: 1, alignItems: 'flex-start' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    flex: '0 0 auto',
+                    mt: 0.1,
+                    px: 1,
+                    py: 0.25,
+                    bgcolor: isError ? '#DC2626' : '#EA580C',
+                    color: '#fff',
+                    borderRadius: '4px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {isError ? 'ERROR' : 'REJECTION'}
+                </Typography>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 500,
+                      color: isError ? '#991B1B' : '#9A3412',
+                      cursor: 'pointer',
+                      wordBreak: 'break-word',
+                    }}
+                    onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                  >
+                    {item.message}
+                  </Typography>
+                  {isExpanded && item.detail && (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        mt: 1,
+                        p: 1.25,
+                        bgcolor: '#111827',
+                        borderRadius: '4px',
+                        overflow: 'auto',
+                        maxHeight: 260,
+                      }}
+                    >
+                      <Typography
+                        component="pre"
+                        sx={{
+                          m: 0,
+                          color: '#FCA5A5',
+                          fontSize: '0.72rem',
+                          fontFamily:
+                            'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {item.detail}
+                      </Typography>
+                    </Paper>
+                  )}
+                </Box>
+              </Stack>
+            </Paper>
+          );
+        })}
+      </Stack>
+    </Box>
+  );
+};
+
+// ========== safeLazy：React.lazy import() 失败的可视兜底 ==========
+// React.lazy 的 import() 抛 Promise rejection 时，有时不会传给 ErrorBoundary，直接整树白。
+// safeLazy 把失败接住，在原组件位置渲染出错面板 + 错误名 + 重试按钮。
+
+type LazyImportResult<T> = Promise<{ default: React.ComponentType<T> }>;
+
+function safeLazy<T = any>(
+  factory: () => LazyImportResult<T>,
+  label = '页面',
+): React.LazyExoticComponent<React.ComponentType<T>> {
+  const FailFallback: React.FC<{ error: Error; retry: () => void }> = ({ error, retry }) => {
+    const [showDetail, setShowDetail] = useState(false);
+    return (
+      <Box sx={{ p: 2, width: '100%' }}>
+        <Paper elevation={0} sx={{ p: 3, border: '1px solid #FCA5A5', borderRadius: '12px', bgcolor: '#FEF2F2' }}>
+          <Stack spacing={2}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <BugReportIcon sx={{ color: '#DC2626' }} />
+              <Typography variant="h6" sx={{ color: '#991B1B', fontWeight: 600 }}>
+                {label}加载失败
+              </Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              以下错误导致当前 {label} 无法渲染（已捕获，不再整页白屏）：
+            </Typography>
+            <Paper elevation={0} sx={{ p: 2, bgcolor: '#111827', borderRadius: '8px', overflow: 'auto' }}>
+              <Typography
+                component="pre"
+                sx={{
+                  m: 0,
+                  color: '#FCA5A5',
+                  fontSize: '0.78rem',
+                  fontFamily:
+                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {error?.stack || String(error)}
+              </Typography>
+              {showDetail && (
+                <Typography
+                  component="pre"
+                  sx={{
+                    m: 0,
+                    mt: 1,
+                    pt: 1,
+                    borderTop: '1px dashed #374151',
+                    color: '#9CA3AF',
+                    fontSize: '0.7rem',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {`message: ${error?.message ?? '—'}\nname: ${error?.name ?? '—'}\ntime: ${new Date().toLocaleString()}`}
+                </Typography>
+              )}
+            </Paper>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<RefreshIcon fontSize="small" />}
+                sx={{ bgcolor: '#DC2626', '&:hover': { bgcolor: '#B91C1C' } }}
+                onClick={retry}
+              >
+                重试加载{label}
+              </Button>
+              <Button size="small" variant="outlined" onClick={() => setShowDetail((s) => !s)}>
+                {showDetail ? '收起详情' : '更多详情'}
+              </Button>
+              <Button size="small" variant="outlined" onClick={() => window.history.back()}>
+                返回上一页
+              </Button>
+              <Button size="small" variant="outlined" onClick={() => window.location.reload()}>
+                刷新窗口
+              </Button>
+            </Stack>
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  };
+
+  const Wrapped: React.FC<T> = (props) => {
+    const [attempt, setAttempt] = useState(0);
+    const [fail, setFail] = useState<Error | null>(null);
+
+    const LazyComp = useMemo(() => {
+      return React.lazy(() =>
+        factory()
+          .then((m) => {
+            setFail(null);
+            return m;
+          })
+          .catch((err: unknown) => {
+            const e = err instanceof Error ? err : new Error(String(err));
+            setFail(e);
+            return { default: (() => null) as React.ComponentType<T> };
+          }),
+      );
+    }, [attempt]);
+
+    if (fail) {
+      return (
+        <FailFallback
+          error={fail}
+          retry={() => {
+            setFail(null);
+            setAttempt((n) => n + 1);
+          }}
+        />
+      );
+    }
+
+    return (
+      <Suspense fallback={null}>
+        <LazyComp {...(props as any)} />
+      </Suspense>
+    );
+  };
+  Wrapped.displayName = `safeLazy(${label})`;
+
+  return React.lazy(() => Promise.resolve({ default: Wrapped as React.ComponentType<T> }));
+}
+
 // v3.2: WKWebView 环境检测，用于禁用高成本效果
 const IS_WKWEBVIEW = isWKWebView();
 
 // 路由级懒加载 — 按需加载各页面组件，降低首屏加载体积
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
-const SkillsPage = React.lazy(() => import('./pages/SkillsPage'));
-const SkillDetailPage = React.lazy(() => import('./pages/SkillDetailPage'));
-const SkillAuditPage = React.lazy(() => import('./pages/SkillAuditPage'));
-const SkillDependencyGraphPage = React.lazy(() => import('./pages/SkillDependencyGraphPage'));
-const SkillUsageAnalyticsPage = React.lazy(() => import('./pages/SkillUsageAnalyticsPage'));
-const SkillHealthDashboardPage = React.lazy(() => import('./pages/SkillHealthDashboardPage'));
-const SkillDocQualityPage = React.lazy(() => import('./pages/SkillDocQualityPage'));
+const SkillsPage = safeLazy(() => import('./pages/SkillsPage'), '技能中心页');
+const SkillDetailPage = safeLazy(() => import('./pages/SkillDetailPage'), '技能详情页');
+const SkillAuditPage = safeLazy(() => import('./pages/SkillAuditPage'), '技能审计页');
+const SkillDependencyGraphPage = safeLazy(() => import('./pages/SkillDependencyGraphPage'), '技能依赖图页');
+const SkillUsageAnalyticsPage = safeLazy(() => import('./pages/SkillUsageAnalyticsPage'), '技能分析页');
+const SkillHealthDashboardPage = safeLazy(() => import('./pages/SkillHealthDashboardPage'), '技能健康页');
+const SkillDocQualityPage = safeLazy(() => import('./pages/SkillDocQualityPage'), '技能文档质量页');
 
 
 const WarehousesPage = React.lazy(() => import('./pages/WarehousesPage'));
@@ -1155,27 +1550,31 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <I18nProvider>
-        <AppSettingsProvider>
-          <ModelsProvider>
-            <WarehouseCapabilityProvider>
-              <ChatProvider defaultModel="auto">
-                <ThemedApp>
-                  <HashRouter>
-                      <PerformanceProfiler id="MainLayout">
-                        <MainLayout />
-                        {/* 数字员工 iframe 常驻预热：路由匹配 /staffdeck 时仅显隐，零二次加载 */}
-                        <StaffDeckPortal />
-                      </PerformanceProfiler>
-                  </HashRouter>
-                </ThemedApp>
-              </ChatProvider>
-            </WarehouseCapabilityProvider>
-          </ModelsProvider>
-        </AppSettingsProvider>
-      </I18nProvider>
-    </ErrorBoundary>
+    <>
+      {/* 全局错误兜底横幅：不受 ErrorBoundary / 子树崩溃影响，永远能渲染，避免纯白屏 */}
+      <GlobalErrorBanner />
+      <ErrorBoundary>
+        <I18nProvider>
+          <AppSettingsProvider>
+            <ModelsProvider>
+              <WarehouseCapabilityProvider>
+                <ChatProvider defaultModel="auto">
+                  <ThemedApp>
+                    <HashRouter>
+                        <PerformanceProfiler id="MainLayout">
+                          <MainLayout />
+                          {/* 数字员工 iframe 常驻预热：路由匹配 /staffdeck 时仅显隐，零二次加载 */}
+                          <StaffDeckPortal />
+                        </PerformanceProfiler>
+                    </HashRouter>
+                  </ThemedApp>
+                </ChatProvider>
+              </WarehouseCapabilityProvider>
+            </ModelsProvider>
+          </AppSettingsProvider>
+        </I18nProvider>
+      </ErrorBoundary>
+    </>
   );
 };
 

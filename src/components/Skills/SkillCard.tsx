@@ -28,9 +28,9 @@ export interface SkillCardProps {
   isRunning: boolean;
   isTriggering: boolean;
   latestExec: AutomationExecution | null;
-  onNavigate: (skillId: string) => void;
+  onNavigate: (skill: Skill) => void;
   onTrigger: (skill: Skill, e: React.MouseEvent) => void;
-  onActivate: (id: string, e: React.MouseEvent) => void;
+  onActivate: (id: string, e?: React.MouseEvent | React.SyntheticEvent | null) => void;
   /** T03: 使用统计信息 */
   usageStats?: UsageStats;
   /** T04: 是否存在冲突 */
@@ -118,14 +118,14 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
 
   const handleCardClick = () => {
     if (auditLevel === 'malicious') {
-      confirmAction(() => onNavigate(skill.id));
+      confirmAction(() => onNavigate(skill));
       return;
     }
-    onNavigate(skill.id);
+    onNavigate(skill);
   };
 
-  const handleActivate = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleActivate = (e?: React.MouseEvent | null) => {
+    e?.stopPropagation?.();
     if (auditLevel === 'malicious') {
       confirmAction(() => onActivate(skill.id, e));
       return;
@@ -166,10 +166,10 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
   const handleAddClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (auditLevel === 'malicious') {
-      confirmAction(() => onNavigate(skill.id));
+      confirmAction(() => onNavigate(skill));
       return;
     }
-    onNavigate(skill.id);
+    onNavigate(skill);
   };
 
   const hasAutomation = !!automationInfo;
@@ -206,209 +206,23 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
     return { label: `缺少 ${missingDeps} 项`, bg: '#FEF2F2', color: '#DC2626' };
   })();
 
-  return (
-    <>
-      <Paper
-        elevation={0}
-        onClick={handleCardClick}
-        sx={{
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'flex-start',
-        p: 2,
-        borderRadius: '12px',
-        border: `1px solid ${gs.border}`,
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        '&:hover': {
-          backgroundColor: gs.bgHover,
-        },
-      }}
-    >
-      {/* T04: 冲突徽章（右上角） — Tooltip 显示冲突数量 */}
-      {hasConflict && (
-        <Tooltip title={`与 ${conflictCount ?? ''} 个技能存在冲突`} arrow placement="top">
-          <Chip
-            label="冲突"
-            size="small"
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              height: 18,
-              fontSize: '0.55rem',
-              fontWeight: 500,
-              backgroundColor: '#FEF3C7',
-              color: '#EA580C',
-              zIndex: 2,
-              cursor: 'default',
-            }}
-          />
-        </Tooltip>
-      )}
+  // 卡片触发徽章黄底→灰底（与内置 tab 统一）
+  const triggerChipBg = gs.bgHover;
+  const triggerChipBorder = gs.border;
+  const triggerChipColor = gs.textSecondary;
 
-
-      {/* 图标区 */}
-      <Box sx={{
-        width: 44,
-        height: 44,
-        borderRadius: '10px',
-        background: getCategoryGradient(skill.category),
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        mr: 1.5,
-        flexShrink: 0,
-        position: 'relative',
-        color: gs.bgPanel,
-        fontSize: '1.1rem',
-        fontWeight: 600,
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: gs.bgPanel, '& .MuiSvgIcon-root': { fontSize: 22, color: gs.bgPanel } }}>
-          {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 22 }} />}
-        </Box>
-        {hasAutomation && (
-          <Box sx={{
-            position: 'absolute',
-            top: -3,
-            right: -3,
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            backgroundColor: isRunning ? '#3B82F6' : '#10B981',
-            border: `2px solid ${gs.bgPanel}`,
-          }} />
-        )}
-      </Box>
-
-      {/* 信息区 */}
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
-          <Typography sx={{
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            color: gs.textPrimary,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}>
-            {skill.name}
-          </Typography>
-          {skill.status === 'available' && (
-            <Chip
-              label="可用"
-              size="small"
-              sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#EFF6FF', color: '#2563EB' }}
-            />
-          )}
-          {skill.status === 'coming' && (
-            <Chip
-              label="即将上线"
-              size="small"
-              sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#FEF3C7', color: '#D97706' }}
-            />
-          )}
-          {/* T03: 安全审查徽章 — 放在标题行右侧，避免与操作按钮重叠 */}
-          {!hasConflict && (
-            <Box sx={{ ml: 'auto', flexShrink: 0 }}>
-              <SecurityBadge
-                level={auditLevel}
-                score={auditScore}
-                onClick={(e) => { e.stopPropagation(); onAuditClick?.(); }}
-                hideSafe={true}
-              />
-            </Box>
-          )}
-        </Box>
-
-        {/* 版本 / 安装状态 / 依赖状态 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap', mb: 0.5 }}>
-          {displayVersion && (
-            <Chip
-              label={`v${displayVersion}`}
-              size="small"
-              sx={{
-                height: 16,
-                fontSize: '0.55rem',
-                fontWeight: 500,
-                backgroundColor: gs.bgHover,
-                color: gs.textMuted,
-              }}
-            />
-          )}
-          <Chip
-            label={installStatusChip.label}
-            size="small"
-            sx={{
-              height: 16,
-              fontSize: '0.55rem',
-              fontWeight: 500,
-              backgroundColor: installStatusChip.bg,
-              color: installStatusChip.color,
-            }}
-          />
-          {depStatusChip && (
-            <Chip
-              label={depStatusChip.label}
-              size="small"
-              sx={{
-                height: 16,
-                fontSize: '0.55rem',
-                fontWeight: 500,
-                backgroundColor: depStatusChip.bg,
-                color: depStatusChip.color,
-              }}
-            />
-          )}
-        </Box>
-
-        <Typography sx={{
-          fontSize: '0.75rem',
-          color: gs.textMuted,
-          lineHeight: 1.5,
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-        }}>
-          {skill.desc}
-        </Typography>
-
-        {/* T03: 使用统计信息 */}
-        {usageStats && usageStats.totalUses > 0 ? (
-          <Typography
-            sx={{
-              fontSize: '0.7rem',
-              color: 'text.secondary',
-              mt: 0.25,
-            }}
-          >
-            使用 {usageStats.totalUses} 次
-            {usageStats.lastUsedAt && daysAgo(usageStats.lastUsedAt) < Infinity
-              ? ` · ${daysAgo(usageStats.lastUsedAt)}天前`
-              : ''}
-          </Typography>
-        ) : (
-          <Typography
-            sx={{
-              fontSize: '0.7rem',
-              color: gs.borderDarker,
-              mt: 0.25,
-            }}
-          >
-            尚未使用
-          </Typography>
-        )}
-
-        {renderLatestExec(latestExec, gs)}
-      </Box>
-
-      {/* 操作按钮 */}
-      {skill.status === 'available' ? (
+  // 操作按钮渲染（纵向卡片：底部操作区）
+  const renderBottomActions = () => {
+    // 内置：显示 Switch（已激活/停用）；其他 status 兼容
+    if (installStatus === 'builtin' || skill.source === 'builtin') {
+      return null; // 开关在专门的 builtin 卡片上处理；SkillCard 不内置 Switch
+    }
+    if (skill.status === 'available') {
+      return (
         <Tooltip title="启用技能">
           <IconButton
             size="small"
-            onClick={handleActivate}
+            onClick={(e) => handleActivate(e)}
             sx={{
               flexShrink: 0,
               width: 28,
@@ -416,7 +230,6 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
               border: `1px solid ${gs.border}`,
               borderRadius: '6px',
               backgroundColor: gs.bgPanel,
-              ml: 1,
               color: '#2563EB',
               '&:hover': { backgroundColor: gs.bgHover, borderColor: gs.borderDarker },
             }}
@@ -424,7 +237,10 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
             <PlayArrowIcon sx={{ fontSize: 14 }} />
           </IconButton>
         </Tooltip>
-      ) : hasAutomation ? (
+      );
+    }
+    if (hasAutomation) {
+      return (
         <Tooltip title={isRunning ? '执行中...' : '立即执行'}>
           <IconButton
             size="small"
@@ -437,7 +253,6 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
               border: `1px solid ${gs.border}`,
               borderRadius: '6px',
               backgroundColor: gs.bgPanel,
-              ml: 1,
               color: isRunning ? '#2563EB' : '#059669',
               '&:hover': { backgroundColor: gs.bgHover, borderColor: gs.borderDarker },
             }}
@@ -449,26 +264,248 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
             )}
           </IconButton>
         </Tooltip>
-      ) : (
-        <IconButton
-          size="small"
-          onClick={(e) => handleAddClick(e)}
-          sx={{
+      );
+    }
+    return (
+      <IconButton
+        size="small"
+        onClick={(e) => handleAddClick(e)}
+        sx={{
+          flexShrink: 0,
+          width: 28,
+          height: 28,
+          border: `1px solid ${gs.border}`,
+          borderRadius: '6px',
+          backgroundColor: gs.bgPanel,
+          color: gs.textMuted,
+          '&:hover': { backgroundColor: gs.bgHover, borderColor: gs.borderDarker },
+        }}
+      >
+        <AddIcon sx={{ fontSize: 14 }} />
+      </IconButton>
+    );
+  };
+
+  return (
+    <>
+      <Paper
+        elevation={0}
+        onClick={handleCardClick}
+        sx={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          maxHeight: 280,
+          p: 2.5,
+          borderRadius: '12px',
+          border: `1px solid ${gs.border}`,
+          backgroundColor: gs.bgPanel,
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            borderColor: gs.borderDarker,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          },
+        }}
+      >
+        {/* T04: 冲突徽章（右上角） — Tooltip 显示冲突数量 */}
+        {hasConflict && (
+          <Tooltip title={`与 ${conflictCount ?? ''} 个技能存在冲突`} arrow placement="top">
+            <Chip
+              label="冲突"
+              size="small"
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                height: 18,
+                fontSize: '0.55rem',
+                fontWeight: 500,
+                backgroundColor: gs.bgHover,
+                color: gs.textSecondary,
+                zIndex: 2,
+                cursor: 'default',
+              }}
+            />
+          </Tooltip>
+        )}
+
+        {/* 顶栏：左侧标题/版本/安装状态；右侧图标 */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+          <Box sx={{ minWidth: 0, pr: 1, flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25, flexWrap: 'wrap' }}>
+              <Typography sx={{
+                fontSize: '0.9375rem',
+                fontWeight: 500,
+                color: gs.textPrimary,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {skill.name}
+              </Typography>
+              {skill.status === 'available' && (
+                <Chip
+                  label="可用"
+                  size="small"
+                  sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#EFF6FF', color: '#2563EB' }}
+                />
+              )}
+              {skill.status === 'coming' && (
+                <Chip
+                  label="即将上线"
+                  size="small"
+                  sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: gs.bgHover, color: gs.textSecondary }}
+                />
+              )}
+            </Box>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
+              {skill.category}{displayVersion ? ` · v${displayVersion}` : ''}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25, flexWrap: 'wrap' }}>
+              <Chip
+                label={installStatusChip.label}
+                size="small"
+                sx={{
+                  height: 16,
+                  fontSize: '0.55rem',
+                  fontWeight: 500,
+                  backgroundColor: installStatusChip.bg,
+                  color: installStatusChip.color,
+                }}
+              />
+              {depStatusChip && (
+                <Chip
+                  label={depStatusChip.label}
+                  size="small"
+                  sx={{
+                    height: 16,
+                    fontSize: '0.55rem',
+                    fontWeight: 500,
+                    backgroundColor: depStatusChip.bg,
+                    color: depStatusChip.color,
+                  }}
+                />
+              )}
+              {!hasConflict && auditLevel && auditLevel !== 'safe' && (
+                <Box onClick={(e) => e.stopPropagation()}>
+                  <SecurityBadge
+                    level={auditLevel}
+                    score={auditScore}
+                    onClick={(e) => { e.stopPropagation(); onAuditClick?.(); }}
+                    hideSafe={true}
+                  />
+                </Box>
+              )}
+            </Box>
+          </Box>
+          {/* 图标区 */}
+          <Box sx={{
+            width: 40,
+            height: 40,
+            borderRadius: '10px',
+            background: getCategoryGradient(skill.category),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             flexShrink: 0,
-            width: 28,
-            height: 28,
-            border: `1px solid ${gs.border}`,
-            borderRadius: '6px',
-            backgroundColor: gs.bgPanel,
-            ml: 1,
-            color: gs.textMuted,
-            '&:hover': { backgroundColor: gs.bgHover, borderColor: gs.borderDarker },
-          }}
-        >
-          <AddIcon sx={{ fontSize: 14 }} />
-        </IconButton>
-      )}
-    </Paper>
+            position: 'relative',
+            color: gs.bgPanel,
+            fontSize: '1.05rem',
+            fontWeight: 600,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: gs.bgPanel, '& .MuiSvgIcon-root': { fontSize: 20, color: gs.bgPanel } }}>
+              {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 20 }} />}
+            </Box>
+            {hasAutomation && (
+              <Box sx={{
+                position: 'absolute',
+                top: -3,
+                right: -3,
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                backgroundColor: isRunning ? '#3B82F6' : '#10B981',
+                border: `2px solid ${gs.bgPanel}`,
+              }} />
+            )}
+          </Box>
+        </Box>
+
+        {/* 描述（最多 3 行裁切） */}
+        <Typography sx={{
+          fontSize: '0.8125rem',
+          color: gs.textSecondary,
+          mb: 1.5,
+          lineHeight: 1.45,
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: 'vertical',
+        }}>
+          {skill.desc || '暂无描述'}
+        </Typography>
+
+        {/* 标签行 + 关键词触发 */}
+        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
+          {(skill.tags || []).slice(0, 3).map((tag) => (
+            <Box
+              key={tag}
+              sx={{
+                px: 1,
+                py: 0.25,
+                fontSize: '0.6875rem',
+                backgroundColor: gs.bgHover,
+                borderRadius: '3px',
+                color: gs.textMuted,
+              }}
+            >
+              {tag}
+            </Box>
+          ))}
+          {skill.trigger && (
+            <Box
+              sx={{
+                px: 1,
+                py: 0.25,
+                fontSize: '0.6875rem',
+                backgroundColor: triggerChipBg,
+                border: `1px solid ${triggerChipBorder}`,
+                borderRadius: '3px',
+                color: triggerChipColor,
+                fontWeight: 500,
+              }}
+            >
+              🔑 {skill.trigger}
+            </Box>
+          )}
+        </Box>
+
+        {/* 使用统计 / 最近执行 / 操作按钮 */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 1 }}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            {usageStats && usageStats.totalUses > 0 ? (
+              <Typography sx={{ fontSize: '0.6875rem', color: gs.textMuted }}>
+                使用 {usageStats.totalUses} 次
+                {usageStats.lastUsedAt && daysAgo(usageStats.lastUsedAt) < Infinity
+                  ? ` · ${daysAgo(usageStats.lastUsedAt)}天前`
+                  : ''}
+              </Typography>
+            ) : (
+              <Typography sx={{ fontSize: '0.6875rem', color: gs.borderDarker }}>
+                尚未使用
+              </Typography>
+            )}
+            {renderLatestExec(latestExec, gs)}
+          </Box>
+          <Box sx={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+            {renderBottomActions()}
+          </Box>
+        </Box>
+      </Paper>
 
       <Dialog open={maliciousDialogOpen} onClose={() => setMaliciousDialogOpen(false)} maxWidth="xs">
         <DialogTitle sx={{ fontSize: '1rem', fontWeight: 600, color: '#DC2626' }}>

@@ -172,45 +172,54 @@ const SkillPreviewDialog: React.FC<SkillPreviewDialogProps> = ({
 
         {/* ============ 对话唤起关键词提示 ============ */}
         {(() => {
-          // trigger 字段可能含多个关键词（以 / 分隔），拆分后逐个展示
-          const triggers = (skill.trigger || '')
-            .split('/')
+          // trigger 字段关键词分隔策略（修复 CI/CD 等带 "/" 的关键词被误拆）：
+          //   1) 若字符串内含有 " · "（inferBuiltinSkillTrigger 的新格式），仅按 · 拆
+          //   2) 否则视为旧 "/" 分隔格式，按 / 拆（兜底兼容）
+          const raw = skill.trigger || '';
+          const hasDotSep = raw.includes('·');
+          const triggers = (hasDotSep
+            ? raw.split(/\s*·\s*/)
+            : raw.split(/\s*\/\s*/)
+          )
             .map(t => t.trim())
             .filter(Boolean);
           if (triggers.length === 0) return null;
           return (
             <Box sx={{ px: 3, pb: 2 }}>
-              <Box sx={{
+              <Box
+                data-testid="skill-dialog-trigger-box"
+                sx={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1.25,
                 flexWrap: 'wrap',
                 px: 2,
                 py: 1.25,
-                bgcolor: '#FEF3C7',
+                bgcolor: '#F3F4F6',
                 borderRadius: '10px',
-                border: '1px solid #FDE68A',
+                border: '1px solid #E5E7EB',
               }}>
-              <KeyboardIcon sx={{ fontSize: 18, color: '#92400E', flexShrink: 0 }} />
-              <Typography sx={{ fontSize: '0.875rem', color: '#92400E', fontWeight: 500, flexShrink: 0 }}>
+              <KeyboardIcon sx={{ fontSize: 18, color: '#374151', flexShrink: 0 }} />
+              <Typography sx={{ fontSize: '0.875rem', color: '#374151', fontWeight: 500, flexShrink: 0 }}>
                 在 AI 对话中输入以下关键词唤起：
               </Typography>
               {triggers.map((kw) => (
                 <Box
                   key={kw}
+                  data-testid="skill-dialog-trigger-chip"
                   sx={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     px: 1.25,
                     py: 0.25,
                     bgcolor: '#FFFFFF',
-                    border: '1px solid #FCD34D',
+                    border: '1px solid #D1D5DB',
                     borderRadius: '6px',
                   }}
                 >
                   <Typography component="span" sx={{
                     fontSize: '0.875rem',
-                    color: '#92400E',
+                    color: '#374151',
                     fontFamily: `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`,
                     fontWeight: 600,
                   }}>

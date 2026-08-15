@@ -87,7 +87,6 @@ const HELP_NAV: NavItem[] = [
 ];
 
 const SYSTEM_NAV: NavItem[] = [
-  { route: EnterpriseRoute.Accounts, label: '账号管理', Icon: Users },
   { route: EnterpriseRoute.Models, label: '模型配置', Icon: Settings },
 ];
 
@@ -260,30 +259,38 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
           onNavigate={handleNavigate}
           isAdmin={isAdmin}
         />
-        <Box sx={{ display: 'flex', minWidth: 0, flex: 1, flexDirection: 'column' }}>
-          {/* 顶部用户条 */}
+        <Box sx={{ display: 'flex', minWidth: 0, flex: 1, flexDirection: 'column', p: 2, gap: 0 }}>
+          {/* 圆角白色面板容器 — 与其他页面卡片圆角风格统一 */}
           <Box
-            component="header"
             sx={{
               display: 'flex',
-              height: '44px',
-              flexShrink: 0,
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: '8px',
-              borderBottom: '1px solid',
-              borderColor: 'var(--border)',
+              flex: 1,
+              minHeight: 0,
+              flexDirection: 'column',
               bgcolor: '#fff',
-              px: '16px',
+              borderRadius: '14px',
+              border: '1px solid var(--surface-muted, #E5E7EB)',
+              overflow: 'hidden',
             }}
           >
-            <Box component="span" sx={{ fontSize: '12px', color: 'var(--muted-foreground)' }}>
-              {currentUser?.display_name || currentUser?.username || '默认用户'}
+            {/* 顶部用户条（已清理右上角登录账号显示） */}
+            <Box
+              component="header"
+              sx={{
+                display: 'flex',
+                height: '44px',
+                flexShrink: 0,
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '8px',
+                borderBottom: '1px solid var(--border, #F3F4F6)',
+                px: '16px',
+              }}
+            />
+            {/* 主内容区 */}
+            <Box component="main" sx={{ minHeight: 0, flex: 1, overflowY: 'auto' }}>
+              {children}
             </Box>
-          </Box>
-          {/* 主内容区 */}
-          <Box component="main" sx={{ minHeight: 0, flex: 1, overflowY: 'auto' }}>
-            {children}
           </Box>
         </Box>
       </Box>

@@ -1,17 +1,16 @@
 import React, { useState, useRef, useCallback } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Box, Typography, Button, IconButton, Tooltip,
+  Box, Typography, Button,
   CircularProgress, Alert, useTheme,
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { getGrayScale } from '../../constants/theme';
 import { useToast } from '../../contexts/ToastContext';
 import { addSkill } from '../../stores/skillStore';
 import { parseSkillMd, type ParsedSkillMd } from '../../utils/skillParser';
 import { unzipSync } from 'fflate';
+import SkillDialogShell, { PrimaryPill, SecondaryGhost } from './SkillDialogShell';
 
 export interface SkillUploadDialogProps {
   open: boolean;
@@ -109,193 +108,159 @@ export const SkillUploadDialog: React.FC<SkillUploadDialogProps> = ({ open, onCl
   }, [file, loading, preview, showToast, handleClose]);
 
   return (
-    <Dialog
+    <SkillDialogShell
       open={open}
       onClose={handleClose}
       maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: '16px',
-          backgroundColor: gs.bgPanel,
-        },
-      }}
+      icon={<UploadFileIcon sx={{ fontSize: 22 }} />}
+      title="上传技能"
+      subtitle="从 .zip / SKILL.md 导入到本地技能库"
+      contentSx={{ pt: 0.5, pb: 1 }}
+      actions={
+        <>
+          <Button {...SecondaryGhost} onClick={handleClose}>
+            取消
+          </Button>
+          <Button
+            {...PrimaryPill}
+            onClick={handleSubmit}
+            disabled={!file || loading || !preview}
+          >
+            {loading ? (
+              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                <CircularProgress size={16} sx={{ color: '#FFFFFF' }} />
+                安装中…
+              </Box>
+            ) : (
+              '安装'
+            )}
+          </Button>
+        </>
+      }
     >
-      <DialogTitle sx={{
-        px: 3, py: 2.5,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: `1px solid ${gs.border}`,
-      }}>
-        <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: gs.textPrimary }}>
-          上传技能
-        </Typography>
-        <Tooltip title="关闭">
-          <IconButton onClick={handleClose} sx={{
-            width: 28,
-            height: 28,
-            borderRadius: '6px',
-            '&:hover': { backgroundColor: gs.bgHover },
-          }}>
-            <CloseIcon sx={{ fontSize: 18, color: gs.textMuted }} />
-          </IconButton>
-        </Tooltip>
-      </DialogTitle>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2, fontSize: '0.75rem', borderRadius: '8px' }}>
+          {error}
+        </Alert>
+      )}
 
-      <DialogContent sx={{ px: 3, py: 3 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2, fontSize: '0.75rem', borderRadius: '8px' }}>
-            {error}
-          </Alert>
-        )}
+      <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2, lineHeight: 1.6 }}>
+        上传 <code style={{ backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>.zip</code> 格式的技能包。
+        包内需含 <code style={{ backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>SKILL.md</code> 描述文件。
+      </Typography>
 
-        <Typography sx={{ fontSize: '0.8rem', color: gs.textMuted, mb: 2, lineHeight: 1.6 }}>
-          上传 <code style={{ backgroundColor: gs.bgHover, padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>.zip</code> 格式的技能包。
-          包内需含 <code style={{ backgroundColor: gs.bgHover, padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>SKILL.md</code> 描述文件。
-        </Typography>
-
-        <Box
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          sx={{
-            border: `2px dashed ${dragging ? '#2563EB' : file ? '#10B981' : gs.borderDarker}`,
-            borderRadius: '12px',
-            backgroundColor: dragging ? '#EFF6FF' : file ? '#F0FDF4' : gs.bgHover,
-            py: 3.5,
-            px: 3,
-            textAlign: 'center',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgHover },
-          }}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".zip"
-            style={{ display: 'none' }}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-          />
-          {loading ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              <CircularProgress size={24} sx={{ color: '#3b82f6' }} />
-              <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>
-                解析中...
-              </Typography>
+      <Box
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        sx={{
+          border: `2px dashed ${dragging ? '#2563EB' : file ? '#10B981' : '#D1D5DB'}`,
+          borderRadius: '12px',
+          backgroundColor: dragging ? '#EFF6FF' : file ? '#F0FDF4' : '#FFFFFF',
+          py: 3.5,
+          px: 3,
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#FFFFFF' },
+        }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".zip"
+          style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+        />
+        {loading ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <CircularProgress size={24} sx={{ color: '#3b82f6' }} />
+            <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280' }}>
+              解析中…
+            </Typography>
+          </Box>
+        ) : file ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircleIcon sx={{ fontSize: 26, color: '#10B981' }} />
             </Box>
-          ) : file ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CheckCircleIcon sx={{ fontSize: 26, color: '#10B981' }} />
-              </Box>
-              <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary }}>{file.name}</Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
-                {(file.size / 1024).toFixed(1)} KB · <span style={{ color: '#2563EB', textDecoration: 'underline' }}>重新选择</span>
-              </Typography>
+            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>{file.name}</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+              {(file.size / 1024).toFixed(1)} KB · <span style={{ color: '#2563EB', textDecoration: 'underline' }}>重新选择</span>
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E5E7EB' }}>
+              <UploadFileIcon sx={{ fontSize: 24, color: '#6B7280' }} />
             </Box>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: gs.border, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <UploadFileIcon sx={{ fontSize: 24, color: gs.textMuted }} />
-              </Box>
-              <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: gs.textSecondary }}>
-                拖拽 .zip 文件到此处
-              </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
-                或点击选择文件（最大 3MB）
-              </Typography>
-            </Box>
-          )}
-        </Box>
-
-        {preview && (
-          <Box sx={{ mt: 2, p: 2, backgroundColor: '#F0FDF4', borderRadius: '10px', border: '1px solid #BBF7D0' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-              <CheckCircleIcon sx={{ fontSize: 15, color: '#10B981' }} />
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534' }}>技能包解析成功</Typography>
-            </Box>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px' }}>
-              <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '24px' }}>名称</Typography>
-              <Typography sx={{ fontSize: '0.8rem', color: gs.textPrimary, fontWeight: 600, lineHeight: '24px' }}>{preview.name || '（未指定）'}</Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '20px' }}>描述</Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, lineHeight: '20px' }}>{preview.description || '（无描述）'}</Typography>
-              {preview.version && (
-                <>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '20px' }}>版本</Typography>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, lineHeight: '20px' }}>{preview.version}</Typography>
-                </>
-              )}
-              {preview.author && (
-                <>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '20px' }}>作者</Typography>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, lineHeight: '20px' }}>{preview.author}</Typography>
-                </>
-              )}
-              {preview.metadata && preview.metadata.emoji && (
-                <>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '20px' }}>图标</Typography>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, lineHeight: '20px' }}>{preview.metadata.emoji}</Typography>
-                </>
-              )}
-              {preview.metadata && preview.metadata.homepage && (
-                <>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '20px' }}>主页</Typography>
-                  <Typography sx={{ fontSize: '0.73rem', color: '#2563EB', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '20px' }}>{preview.metadata.homepage}</Typography>
-                </>
-              )}
-              {preview.metadata && preview.metadata.requires && (
-                <>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '20px' }}>依赖</Typography>
-                  <Typography sx={{ fontSize: '0.73rem', color: gs.textSecondary, lineHeight: '20px' }}>
-                    {preview.metadata.requires.bins?.length && `bins: ${preview.metadata.requires.bins.join(', ')}`}
-                    {preview.metadata.requires.env?.length && ` env: ${preview.metadata.requires.env.join(', ')}`}
-                  </Typography>
-                </>
-              )}
-              {preview.body && (
-                <>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '20px' }}>AI 上下文</Typography>
-                  <Typography sx={{ fontSize: '0.73rem', color: gs.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '20px' }}>
-                    {preview.body.length > 60 ? `${preview.body.slice(0, 60)}...` : preview.body}
-                  </Typography>
-                </>
-              )}
-            </Box>
+            <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+              拖拽 .zip 文件到此处
+            </Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+              或点击选择文件（最大 3MB）
+            </Typography>
           </Box>
         )}
-      </DialogContent>
+      </Box>
 
-      <DialogActions sx={{ px: 3, py: 2, borderTop: `1px solid ${gs.border}` }}>
-        <Button
-          onClick={handleClose}
-          sx={{
-            textTransform: 'none',
-            fontSize: '0.8125rem',
-            color: gs.textMuted,
-            '&:hover': { backgroundColor: gs.bgHover },
-          }}
-        >
-          取消
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          sx={{
-            textTransform: 'none',
-            fontSize: '0.8125rem',
-            borderRadius: '8px',
-            backgroundColor: '#2563EB',
-            '&:hover': { backgroundColor: '#1D4ED8' },
-          }}
-          disabled={!file || loading || !preview}
-        >
-          {loading ? '安装中...' : '安装'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      {preview && (
+        <Box sx={{ mt: 2, p: 2, backgroundColor: '#FFFFFF', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+            <CheckCircleIcon sx={{ fontSize: 15, color: '#10B981' }} />
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534' }}>技能包解析成功</Typography>
+          </Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '24px' }}>名称</Typography>
+            <Typography sx={{ fontSize: '0.8rem', color: '#111827', fontWeight: 600, lineHeight: '24px' }}>{preview.name || '（未指定）'}</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>描述</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: '#374151', lineHeight: '20px' }}>{preview.description || '（无描述）'}</Typography>
+            {preview.version && (
+              <>
+                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>版本</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#374151', lineHeight: '20px' }}>{preview.version}</Typography>
+              </>
+            )}
+            {preview.author && (
+              <>
+                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>作者</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#374151', lineHeight: '20px' }}>{preview.author}</Typography>
+              </>
+            )}
+            {preview.metadata && preview.metadata.emoji && (
+              <>
+                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>图标</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#374151', lineHeight: '20px' }}>{preview.metadata.emoji}</Typography>
+              </>
+            )}
+            {preview.metadata && preview.metadata.homepage && (
+              <>
+                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>主页</Typography>
+                <Typography sx={{ fontSize: '0.73rem', color: '#2563EB', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '20px' }}>{preview.metadata.homepage}</Typography>
+              </>
+            )}
+            {preview.metadata && preview.metadata.requires && (
+              <>
+                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>依赖</Typography>
+                <Typography sx={{ fontSize: '0.73rem', color: '#374151', lineHeight: '20px' }}>
+                  {preview.metadata.requires.bins?.length && `bins: ${preview.metadata.requires.bins.join(', ')}`}
+                  {preview.metadata.requires.env?.length && ` env: ${preview.metadata.requires.env.join(', ')}`}
+                </Typography>
+              </>
+            )}
+            {preview.body && (
+              <>
+                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>AI 上下文</Typography>
+                <Typography sx={{ fontSize: '0.73rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '20px' }}>
+                  {preview.body.length > 60 ? `${preview.body.slice(0, 60)}...` : preview.body}
+                </Typography>
+              </>
+            )}
+          </Box>
+        </Box>
+      )}
+    </SkillDialogShell>
   );
 };
 

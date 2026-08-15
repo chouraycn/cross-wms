@@ -8,9 +8,12 @@ import {
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import TuneIcon from '@mui/icons-material/Tune';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import SkillDialogShell, { PrimaryPill, SecondaryGhost, DangerPill } from '../components/Skills/SkillDialogShell';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import LinkIcon from '@mui/icons-material/Link';
@@ -127,8 +130,27 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     // 中文判断工具：若字符串含任何非 ASCII（中日韩），视为已有中文
     const hasCjk = (s: string | null | undefined) => !!s && /[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(s);
 
+    // T2：过滤以 skill 开头并跟版本号的无用条目（形如 skill-v1.2.3 / skill-v0.0.1 / skill-1.0.0 等）
+    const VERSIONED_NOISE_RE = /^skill[-_]?v?\d+[\._]\d+/i;
+    const deduped = new Map<string, OpenClawSkillEntry>();
+    for (const entry of openclawSkills) {
+      const id = entry.id || '';
+      const name = entry.name || '';
+      if (VERSIONED_NOISE_RE.test(id) || VERSIONED_NOISE_RE.test(name)) continue;
+      // 同 id 合并：保留元数据更丰富的（有 tags/description 的）
+      const existing = deduped.get(id);
+      if (!existing) {
+        deduped.set(id, entry);
+      } else {
+        const existingScore = (existing.tags?.length || 0) + (existing.description ? 1 : 0) + (existing.trigger ? 1 : 0);
+        const newScore = (entry.tags?.length || 0) + (entry.description ? 1 : 0) + (entry.trigger ? 1 : 0);
+        if (newScore > existingScore) deduped.set(id, entry);
+      }
+    }
+    const cleanedOpenclaw = Array.from(deduped.values());
+
     // 转换 openclaw 技能为 Skill 格式；套用 BUILTIN_ZH 中文词典 + 语义 icon + 关键词 trigger
-    const converted: Skill[] = openclawSkills.map(entry => {
+    const converted: Skill[] = cleanedOpenclaw.map(entry => {
       const rawStatus: Skill['status'] = 'active';
       const patched = patches[entry.id] as Skill['status'] | undefined;
       const zh = BUILTIN_ZH[entry.id];
@@ -560,9 +582,13 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
 
   // v1.7.87: 技能预览弹窗
   const [previewSkill, setPreviewSkill] = useState<Skill | null>(null);
-  const handlePreviewSkill = useCallback((id: string) => {
-    const target = getAllSkills().find((s) => s.id === id);
-    if (target) setPreviewSkill(target);
+  const handlePreviewSkill = useCallback((skillOrId: Skill | string) => {
+    if (typeof skillOrId === 'string') {
+      const target = getAllSkills().find((s) => s.id === skillOrId);
+      if (target) setPreviewSkill(target);
+    } else {
+      setPreviewSkill(skillOrId);
+    }
   }, []);
   const handleClosePreview = useCallback(() => setPreviewSkill(null), []);
   const handleUseSkill = useCallback((target: Skill) => {
@@ -654,9 +680,9 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     }
   };
 
-  // 启用技能
-  const handleActivateSkill = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  // 启用技能（事件参数可为空，兼容 Switch 组件直接调用）
+  const handleActivateSkill = (id: string, e?: React.MouseEvent | React.SyntheticEvent | null) => {
+    e?.stopPropagation?.();
     setSkillStatus(id, 'active');
     setSkillVersion((v) => v + 1);
     showToast(ToastMessages.SKILL_ENABLED, 'success');
@@ -1575,14 +1601,28 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                   transition: 'all 0.2s',
                   '&:hover': { borderColor: gs.borderDarker, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
                   cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: 0,
+                  // 固定卡片最大高度，内容过多时区域内滚动，防止溢出视口
+                  maxHeight: 280,
                 }}
                 onClick={() => {
-                  navigate(`/chat?skill=${encodeURIComponent(skill.id)}`);
+                  setPreviewSkill(skill);
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                  <Box>
-                    <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
+                  <Box sx={{ minWidth: 0, pr: 1 }}>
+                    <Typography
+                      sx={{
+                        fontSize: '0.9375rem',
+                        fontWeight: 500,
+                        color: gs.textPrimary,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {skill.name}
                     </Typography>
                     <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
@@ -1599,14 +1639,28 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: gs.borderDarker,
+                    flexShrink: 0,
                   }}>
                     {(ICON_MAP as any)[skill.icon || 'Extension'] || <ExtensionIcon sx={{ fontSize: 20 }} />}
                   </Box>
                 </Box>
-                <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary, mb: 1.5, lineHeight: 1.4 }}>
+                <Typography
+                  sx={{
+                    fontSize: '0.8125rem',
+                    color: gs.textSecondary,
+                    mb: 1.5,
+                    lineHeight: 1.4,
+                    flex: 1,
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                  }}
+                >
                   {skill.desc || '暂无描述'}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
                   {(skill.tags || []).slice(0, 3).map((tag) => (
                     <Box
                       key={tag}
@@ -1628,9 +1682,10 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                         px: 1,
                         py: 0.25,
                         fontSize: '0.6875rem',
-                        backgroundColor: '#FEF3C7',
+                        backgroundColor: gs.bgHover,
+                        border: `1px solid ${gs.border}`,
                         borderRadius: '3px',
-                        color: '#D97706',
+                        color: gs.textSecondary,
                         fontWeight: 500,
                       }}
                     >
@@ -1638,24 +1693,14 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                     </Box>
                   )}
                 </Box>
-                <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreviewSkill(skill);
-                    }}
-                    sx={{ textTransform: 'none', fontSize: '0.75rem' }}
-                  >
-                    预览
-                  </Button>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                   <Switch
                     checked={skill.status === 'active'}
                     onClick={(e) => { e.stopPropagation(); }}
                     onChange={(_e, checked) => {
+                      // T3/T5：开关区域点击冒泡已在 onClick 中阻止；onChange 直接改状态（event 参数可空）
                       if (checked) {
-                        handleActivateSkill(skill.id, undefined as any);
+                        handleActivateSkill(skill.id, null);
                       } else {
                         handleToggleSkill(skill, false);
                       }
@@ -1899,45 +1944,27 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
       )}
 
       {/* T05: 匹配引擎设置对话框 */}
-      <Dialog
+      <SkillDialogShell
         open={matchConfigOpen}
         onClose={() => setMatchConfigOpen(false)}
         maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: '12px', maxHeight: '80vh' },
-        }}
+        icon={<TuneIcon sx={{ fontSize: 22 }} />}
+        title="匹配引擎设置"
+        subtitle="调整技能匹配的算法阈值与权重策略"
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${gs.border}` }}>
-          <Typography sx={{ fontSize: '1rem', fontWeight: 600 }}>匹配引擎设置</Typography>
-          <IconButton size="small" onClick={() => setMatchConfigOpen(false)}>
-            <TuneIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
-          <MatchConfigPanel onConfigSaved={() => {}} />
-        </DialogContent>
-      </Dialog>
+        <MatchConfigPanel onConfigSaved={() => {}} />
+      </SkillDialogShell>
       {/* 关键词触发统计对话框 */}
-      <Dialog
+      <SkillDialogShell
         open={keywordStatsOpen}
         onClose={() => setKeywordStatsOpen(false)}
         maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: '12px', maxHeight: '90vh' },
-        }}
+        icon={<BarChartIcon sx={{ fontSize: 22 }} />}
+        title="关键词触发统计"
+        subtitle="查看关键词在 AI 对话中的使用频率和命中情况"
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${gs.border}` }}>
-          <Typography sx={{ fontSize: '1rem', fontWeight: 600 }}>关键词触发统计</Typography>
-          <IconButton size="small" onClick={() => setKeywordStatsOpen(false)}>
-            <CloseIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 4 }}>
-          <KeywordTriggerStatsPanel />
-        </DialogContent>
-      </Dialog>
+        <KeywordTriggerStatsPanel />
+      </SkillDialogShell>
       {/* v1.7.87: 技能预览弹窗 */}
       <SkillPreviewDialog
         open={!!previewSkill}
@@ -1947,40 +1974,50 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
       />
 
       {/* 删除技能确认 Dialog（替代 window.confirm，兼容 WKWebView） */}
-      <Dialog
+      <SkillDialogShell
         open={!!deleteConfirmSkill}
         onClose={() => deletingSkill ? undefined : setDeleteConfirmSkill(null)}
         maxWidth="xs"
-        fullWidth
+        disableEscapeKeyDown={deletingSkill}
+        icon={<DeleteSweepIcon sx={{ fontSize: 22, color: '#DC2626' }} />}
+        title="删除技能"
+        subtitle="此操作将从本地技能库中移除，无法恢复"
+        actions={
+          <>
+            <Button {...SecondaryGhost} onClick={() => setDeleteConfirmSkill(null)} disabled={deletingSkill}>
+              取消
+            </Button>
+            <Button
+              {...DangerPill}
+              onClick={confirmDeleteSkill}
+              disabled={deletingSkill}
+            >
+              {deletingSkill ? (
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                  <CircularProgress size={16} sx={{ color: '#FFFFFF' }} />
+                  删除中…
+                </Box>
+              ) : (
+                '删除'
+              )}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle sx={{ fontWeight: 600 }}>
-          删除技能
-        </DialogTitle>
-        <DialogContent>
-          <Typography sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
-            确定要删除技能「{deleteConfirmSkill?.name}」吗？此操作不可恢复。
+        <Box sx={{
+          px: 2,
+          py: 1.5,
+          backgroundColor: '#FEF2F2',
+          border: '1px solid #FECACA',
+          borderRadius: '10px',
+        }}>
+          <Typography sx={{ fontSize: '0.875rem', color: '#991B1B', lineHeight: 1.5 }}>
+            确定要删除技能「<strong>{deleteConfirmSkill?.name}</strong>」吗？
+            <br />
+            该技能的所有配置、标签与使用统计将被一并清除，且不可恢复。
           </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button
-            onClick={() => setDeleteConfirmSkill(null)}
-            disabled={deletingSkill}
-            sx={{ textTransform: 'none' }}
-          >
-            取消
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={confirmDeleteSkill}
-            disabled={deletingSkill}
-            startIcon={deletingSkill ? <CircularProgress size={16} color="inherit" /> : undefined}
-            sx={{ textTransform: 'none' }}
-          >
-            {deletingSkill ? '删除中…' : '删除'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </SkillDialogShell>
     </Box>
   );
 };

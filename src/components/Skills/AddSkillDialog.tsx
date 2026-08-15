@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Box, Typography, Button, CircularProgress, Dialog, DialogTitle,
-  DialogContent, DialogActions, Alert, Checkbox, IconButton, Tooltip,
-  useTheme,
+  Box, Typography, Button, CircularProgress, Alert, Checkbox, IconButton, Tooltip,
+  useTheme, ListItem, ListItemIcon, ListItemText, Chip, DialogContent, DialogActions,
 } from '@mui/material';
-import MuiAlert from '@mui/material/Alert';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExtensionIcon from '@mui/icons-material/Extension';
@@ -23,6 +21,7 @@ import type { ConflictResult } from '../../types/skill';
 import type { SkillAudit } from '../../types/skill';
 import SecurityAuditDialog from './SecurityAuditDialog';
 import { getGrayScale } from '../../constants/theme';
+import SkillDialogShell, { PrimaryPill, SecondaryGhost, WarningPill } from './SkillDialogShell';
 
 // ===================== 类型 =====================
 
@@ -110,76 +109,64 @@ const ConflictConfirmDialog: React.FC<{
   onConfirm: () => void;
   onCancel: () => void;
 }> = ({ open, conflicts, onConfirm, onCancel }) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const gs = getGrayScale(isDark);
-
   return (
-    <Dialog
+    <SkillDialogShell
       open={open}
       onClose={onCancel}
       maxWidth="xs"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: '12px' } }}
+      icon={<WarningAmberIcon sx={{ fontSize: 22, color: '#EA580C' }} />}
+      title="检测到技能冲突"
+      subtitle="以下已安装技能与即将导入的技能存在重叠，可能造成触发词或标签冲突"
+      actions={
+        <>
+          <Button {...SecondaryGhost} onClick={onCancel}>
+            取消
+          </Button>
+          <Button {...WarningPill} onClick={onConfirm}>
+            仍然导入
+          </Button>
+        </>
+      }
     >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
-        <WarningAmberIcon sx={{ color: '#EA580C', fontSize: 22 }} />
-        <Typography sx={{ fontWeight: 600, fontSize: '0.95rem' }}>检测到技能冲突</Typography>
-      </DialogTitle>
-      <DialogContent>
-        <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted, mb: 1.5 }}>
-          以下已安装技能与即将导入的技能存在重叠，可能导致触发词或标签冲突：
-        </Typography>
-        <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-          {conflicts.map((c) => (
-            <Box
-              key={c.skillId}
-              sx={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 1,
-                px: 1.5,
-                py: 1,
-                mb: 0.75,
-                borderLeft: '3px solid #EA580C',
-                backgroundColor: '#FEF3C7',
-                borderRadius: '0 6px 6px 0',
-              }}
-            >
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#92400E' }}>
-                  {c.skillName}
-                </Typography>
-                <Typography sx={{ fontSize: '0.7rem', color: '#B45309', mt: 0.25 }}>
-                  {c.reasons.join('；')}
-                </Typography>
-              </Box>
-              <Typography sx={{ fontSize: '0.65rem', color: '#D97706', flexShrink: 0, mt: 0.25 }}>
-                {Math.round(c.score * 100)}%
+      <Box sx={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        {conflicts.map((c) => (
+          <Box
+            key={c.skillId}
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1,
+              px: 1.75,
+              py: 1.25,
+              borderLeft: '3px solid #EA580C',
+              backgroundColor: '#FEF3C7',
+              borderRadius: '0 8px 8px 0',
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: '0.84rem', fontWeight: 700, color: '#92400E' }}>
+                {c.skillName}
+              </Typography>
+              <Typography sx={{ fontSize: '0.72rem', color: '#B45309', mt: 0.3, lineHeight: 1.4 }}>
+                {c.reasons.join('；')}
               </Typography>
             </Box>
-          ))}
-        </Box>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
-        <Button onClick={onCancel} sx={{ textTransform: 'none', color: gs.textMuted, borderRadius: 2 }}>
-          取消
-        </Button>
-        <Button
-          variant="contained"
-          onClick={onConfirm}
-          sx={{
-            backgroundColor: '#EA580C',
-            '&:hover': { backgroundColor: '#C2410C' },
-            textTransform: 'none',
-            borderRadius: 2,
-            fontWeight: 600,
-          }}
-        >
-          仍然导入
-        </Button>
-      </DialogActions>
-    </Dialog>
+            <Chip
+              size="small"
+              label={`${Math.round(c.score * 100)}%`}
+              sx={{
+                bgcolor: '#FDE68A',
+                color: '#92400E',
+                fontWeight: 700,
+                fontSize: '0.6875rem',
+                flexShrink: 0,
+                mt: 0.25,
+              }}
+            />
+          </Box>
+        ))}
+      </Box>
+    </SkillDialogShell>
   );
 };
 
@@ -318,8 +305,8 @@ const SkillMdImportPanel: React.FC<{
 
   return (
     <Box>
-      <Typography sx={{ fontSize: '0.8rem', color: gs.textMuted, mb: 2 }}>
-        从应用<code style={{ backgroundColor: gs.bgHover, padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>技能目录</code>扫描 <code style={{ backgroundColor: gs.bgHover, padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>SKILL.md</code> 格式的技能包并导入。SKILL.md 正文将作为 AI 上下文模板。
+      <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2 }}>
+        从应用<code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>技能目录</code>扫描 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>SKILL.md</code> 格式的技能包并导入。SKILL.md 正文将作为 AI 上下文模板。
       </Typography>
 
       {/* 操作栏 */}
@@ -333,7 +320,7 @@ const SkillMdImportPanel: React.FC<{
                 size="small"
                 sx={{ p: 0.25 }}
               />
-              <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
+              <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
                 全选 ({remaining.length})
               </Typography>
             </Box>
@@ -341,7 +328,7 @@ const SkillMdImportPanel: React.FC<{
         </Box>
         <Tooltip title="刷新">
           <IconButton size="small" onClick={loadSkills} disabled={loading}>
-            <RefreshIcon sx={{ fontSize: 16, color: gs.textMuted }} />
+            <RefreshIcon sx={{ fontSize: 16, color: '#6B7280' }} />
           </IconButton>
         </Tooltip>
       </Box>
@@ -349,18 +336,18 @@ const SkillMdImportPanel: React.FC<{
       {/* 加载中 */}
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress size={24} sx={{ color: gs.textMuted }} />
+          <CircularProgress size={24} sx={{ color: '#9CA3AF' }} />
         </Box>
       )}
 
       {/* 无结果 */}
       {!loading && skills.length === 0 && !error && (
         <Box sx={{ textAlign: 'center', py: 4 }}>
-          <FolderOpenIcon sx={{ fontSize: 36, color: gs.borderDarker, mb: 1 }} />
-          <Typography sx={{ fontSize: '0.85rem', color: gs.textDisabled }}>
+          <FolderOpenIcon sx={{ fontSize: 36, color: '#D1D5DB', mb: 1 }} />
+          <Typography sx={{ fontSize: '0.85rem', color: '#9CA3AF' }}>
             未发现 SKILL.md 技能包
           </Typography>
-          <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, mt: 0.5 }}>
+          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.5 }}>
             请将技能包放入应用技能目录
           </Typography>
         </Box>
@@ -368,7 +355,13 @@ const SkillMdImportPanel: React.FC<{
 
       {/* 技能列表 */}
       {!loading && remaining.length > 0 && (
-        <Box sx={{ maxHeight: 300, overflowY: 'auto', border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+        <Box sx={{
+          maxHeight: 300,
+          overflowY: 'auto',
+          border: '1px solid #E5E7EB',
+          borderRadius: '10px',
+          backgroundColor: '#FFFFFF',
+        }}>
           {remaining.map((skill, idx) => (
             <Box
               key={skill.dirName}
@@ -380,10 +373,10 @@ const SkillMdImportPanel: React.FC<{
                 px: 2,
                 py: 1.5,
                 cursor: 'pointer',
-                borderBottom: idx < remaining.length - 1 ? `1px solid ${gs.bgHover}` : 'none',
+                borderBottom: idx < remaining.length - 1 ? '1px solid #F3F4F6' : 'none',
                 backgroundColor: selected.has(skill.dirName) ? '#F0FDF4' : 'transparent',
                 transition: 'background-color 0.15s',
-                '&:hover': { backgroundColor: selected.has(skill.dirName) ? '#F0FDF4' : gs.bgHover },
+                '&:hover': { backgroundColor: selected.has(skill.dirName) ? '#F0FDF4' : '#F9FAFB' },
               }}
             >
               <Checkbox
@@ -393,12 +386,26 @@ const SkillMdImportPanel: React.FC<{
               />
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DescriptionIcon sx={{ fontSize: 16, color: gs.textMuted }} />
-                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: gs.textPrimary }}>
+                  <DescriptionIcon sx={{ fontSize: 16, color: '#6B7280' }} />
+                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#111827' }}>
                     {skill.name}
                   </Typography>
+                  {imported.has(skill.dirName) && (
+                    <Chip
+                      size="small"
+                      icon={<CheckCircleIcon sx={{ fontSize: 13 }} />}
+                      label="已导入"
+                      sx={{
+                        bgcolor: '#DCFCE7',
+                        color: '#166534',
+                        fontWeight: 600,
+                        fontSize: '0.6875rem',
+                        height: 20,
+                      }}
+                    />
+                  )}
                 </Box>
-                <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, mt: 0.25, ml: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mt: 0.25, ml: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {skill.description || '（无描述）'}
                 </Typography>
               </Box>
@@ -409,46 +416,58 @@ const SkillMdImportPanel: React.FC<{
 
       {/* 已导入 */}
       {imported.size > 0 && (
-        <Box sx={{ mt: 1.5, p: 1.5, backgroundColor: '#F0FDF4', borderRadius: 2, border: '1px solid #BBF7D0' }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534' }}>
-            已导入 {imported.size} 个技能
-          </Typography>
+        <Box sx={{ mt: 1.5, p: 1.75, backgroundColor: '#FFFFFF', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
+            <CheckCircleIcon sx={{ fontSize: 15, color: '#10B981' }} />
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: '#166534' }}>
+              已成功导入 {imported.size} 个技能
+            </Typography>
+          </Box>
         </Box>
       )}
 
       {error && (
-        <Alert severity="error" sx={{ mt: 1.5, fontSize: '0.8rem' }}>
+        <Alert severity="error" sx={{ mt: 1.5, fontSize: '0.8rem', borderRadius: '8px' }}>
           {error}
         </Alert>
       )}
 
       {/* 底部操作 */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
-        <Button onClick={onClose} sx={{ textTransform: 'none', color: gs.textMuted }}>
+        <Button {...SecondaryGhost} onClick={onClose}>
           关闭
         </Button>
         <Button
-          variant="contained"
+          {...PrimaryPill}
           onClick={handleImportSelected}
           disabled={selected.size === 0 || importing || checkingConflict}
-          sx={{
-            backgroundColor: gs.textPrimary,
-            '&:hover': { backgroundColor: gs.textSecondary },
-            textTransform: 'none',
-            borderRadius: 2,
-          }}
         >
-          {importing || checkingConflict ? <CircularProgress size={16} sx={{ color: gs.bgPanel, mr: 1 }} /> : null}
-          {checkingConflict ? '检查冲突中...' : importing ? '导入中...' : `导入 ${selected.size > 0 ? `(${selected.size})` : ''}`}
+          {(importing || checkingConflict) && (
+            <CircularProgress size={16} sx={{ color: '#FFFFFF', mr: 0.75 }} />
+          )}
+          {checkingConflict ? '检查冲突中…' : importing ? '导入中…' : `导入${selected.size > 0 ? `（${selected.size}）` : ''}`}
         </Button>
       </Box>
 
       {/* 格式说明 */}
-      <Box sx={{ mt: 2, p: 1.5, backgroundColor: gs.bgHover, borderRadius: 2, border: `1px solid ${gs.border}` }}>
-        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textSecondary, mb: 0.75 }}>SKILL.md 格式</Typography>
+      <Box sx={{ mt: 2, p: 1.75, backgroundColor: '#FFFFFF', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
+        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#374151', mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <DescriptionIcon sx={{ fontSize: 13, color: '#6B7280' }} /> SKILL.md 格式参考
+        </Typography>
         <Box
           component="pre"
-          sx={{ fontSize: '0.68rem', color: gs.textSecondary, backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}
+          sx={{
+            fontSize: '0.7rem',
+            color: '#374151',
+            backgroundColor: '#F9FAFB',
+            border: '1px solid #E5E7EB',
+            borderRadius: '8px',
+            p: 1.5,
+            m: 0,
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+            lineHeight: 1.55,
+            whiteSpace: 'pre-wrap',
+          }}
         >{`---
 name: 技能名称
 description: 技能描述
@@ -705,43 +724,54 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
 
   // ===================== 渲染 =====================
 
+  // ZIP Tab 的底部操作按钮（用于 SkillDialogShell 的 actions）
+  const zipActions = activeTab === 'zip' ? (
+    <>
+      <Button {...SecondaryGhost} onClick={handleClose} disabled={loading}>
+        取消
+      </Button>
+      <Button
+        {...PrimaryPill}
+        onClick={handleInstall}
+        disabled={!file || loading}
+      >
+        {loading ? (
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+            <CircularProgress size={16} sx={{ color: '#FFFFFF' }} />
+            检查冲突中…
+          </Box>
+        ) : (
+          '安装技能'
+        )}
+      </Button>
+    </>
+  ) : undefined;
+
   return (
-    <Dialog
+    <SkillDialogShell
       open={open}
       onClose={handleClose}
       maxWidth="sm"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: '16px', overflow: 'hidden', m: 2 } }}
-      BackdropProps={{ sx: { backgroundColor: 'rgba(0,0,0,0.25)' } }}
+      icon={<ExtensionIcon sx={{ fontSize: 22 }} />}
+      title="安装技能包"
+      subtitle="从文件或目录导入技能"
+      contentSx={{ pt: 0, px: 0, pb: 0 }}
+      actions={zipActions}
     >
-      {/* 渐变 Header */}
-      <Box sx={{
-        background: 'linear-gradient(135deg, #0F2027 0%, #203A43 50%, #2C5364 100%)',
-        px: 3, py: 2.5,
-        display: 'flex', alignItems: 'center', gap: 1.5,
-      }}>
-        <Box sx={{
-          width: 36, height: 36, borderRadius: '10px',
-          backgroundColor: 'rgba(255,255,255,0.12)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <ExtensionIcon sx={{ color: gs.bgPanel, fontSize: 20 }} />
-        </Box>
-        <Box>
-          <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: gs.bgPanel, lineHeight: 1.2 }}>安装技能包</Typography>
-          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', mt: 0.25 }}>从文件或目录导入技能</Typography>
-        </Box>
-      </Box>
-
       {/* Tab 切换 */}
-      <Box sx={{ display: 'flex', borderBottom: `1px solid ${gs.border}`, px: 3, backgroundColor: gs.bgHover }}>
+      <Box sx={{
+        display: 'flex',
+        borderBottom: '1px solid #E5E7EB',
+        px: 3,
+        backgroundColor: '#F3F4F6',
+      }}>
         <Box
           onClick={() => setActiveTab('skillmd')}
           sx={{
             py: 1.5,
             px: 2,
             fontSize: '0.8125rem',
-            color: activeTab === 'skillmd' ? gs.textPrimary : gs.textMuted,
+            color: activeTab === 'skillmd' ? '#111827' : '#6B7280',
             cursor: 'pointer',
             position: 'relative',
             fontWeight: activeTab === 'skillmd' ? 600 : 400,
@@ -749,7 +779,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
             alignItems: 'center',
             gap: 0.75,
             transition: 'color 0.2s',
-            '&:hover': { color: gs.textSecondary },
+            '&:hover': { color: '#374151' },
             '&::after': activeTab === 'skillmd' ? {
               content: '""',
               position: 'absolute',
@@ -757,7 +787,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
               left: 0,
               right: 0,
               height: 2,
-              backgroundColor: gs.textPrimary,
+              backgroundColor: '#111827',
               borderRadius: '2px 2px 0 0',
             } : {},
           }}
@@ -771,7 +801,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
             py: 1.5,
             px: 2,
             fontSize: '0.8125rem',
-            color: activeTab === 'zip' ? gs.textPrimary : gs.textMuted,
+            color: activeTab === 'zip' ? '#111827' : '#6B7280',
             cursor: 'pointer',
             position: 'relative',
             fontWeight: activeTab === 'zip' ? 600 : 400,
@@ -779,7 +809,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
             alignItems: 'center',
             gap: 0.75,
             transition: 'color 0.2s',
-            '&:hover': { color: gs.textSecondary },
+            '&:hover': { color: '#374151' },
             '&::after': activeTab === 'zip' ? {
               content: '""',
               position: 'absolute',
@@ -787,7 +817,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
               left: 0,
               right: 0,
               height: 2,
-              backgroundColor: gs.textPrimary,
+              backgroundColor: '#111827',
               borderRadius: '2px 2px 0 0',
             } : {},
           }}
@@ -797,7 +827,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         </Box>
       </Box>
 
-      <DialogContent sx={{ pt: '20px !important', pb: 1 }}>
+      <Box sx={{ px: 3, pt: 2, pb: activeTab === 'zip' ? 1.5 : 2.5 }}>
         {/* SKILL.md 导入面板 */}
         {activeTab === 'skillmd' && (
           <SkillMdImportPanel
@@ -809,8 +839,8 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         {/* ZIP 上传面板 */}
         {activeTab === 'zip' && (
           <>
-            <Typography sx={{ fontSize: '0.8rem', color: gs.textMuted, mb: 2, lineHeight: 1.6 }}>
-              上传 <code style={{ backgroundColor: gs.bgHover, padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>.zip</code> 格式的技能包。包内需含 <code style={{ backgroundColor: gs.bgHover, padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>SKILL.md</code> 描述文件。
+            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2, lineHeight: 1.6 }}>
+              上传 <code style={{ backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>.zip</code> 格式的技能包。包内需含 <code style={{ backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>SKILL.md</code> 描述文件。
             </Typography>
 
             {/* 拖拽上传区 */}
@@ -820,15 +850,15 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               sx={{
-                border: `2px dashed ${dragging ? '#2563EB' : file ? '#10B981' : gs.borderDarker}`,
+                border: `2px dashed ${dragging ? '#2563EB' : file ? '#10B981' : '#D1D5DB'}`,
                 borderRadius: '12px',
-                backgroundColor: dragging ? '#EFF6FF' : file ? '#F0FDF4' : gs.bgHover,
+                backgroundColor: dragging ? '#EFF6FF' : file ? '#F0FDF4' : '#FFFFFF',
                 py: 3.5,
                 px: 3,
                 textAlign: 'center',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgHover },
+                '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#FFFFFF' },
               }}
             >
               <input
@@ -843,20 +873,20 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
                   <Box sx={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <CheckCircleIcon sx={{ fontSize: 26, color: '#10B981' }} />
                   </Box>
-                  <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary }}>{file.name}</Typography>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
+                  <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>{file.name}</Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
                     {(file.size / 1024).toFixed(1)} KB · <span style={{ color: '#2563EB', textDecoration: 'underline' }}>重新选择</span>
                   </Typography>
                 </Box>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: gs.border, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <UploadFileIcon sx={{ fontSize: 24, color: gs.textMuted }} />
+                  <Box sx={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #E5E7EB' }}>
+                    <UploadFileIcon sx={{ fontSize: 24, color: '#6B7280' }} />
                   </Box>
-                  <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: gs.textSecondary }}>
+                  <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
                     拖拽 .zip 文件到此处
                   </Typography>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
                     或点击选择文件（最大 3MB）
                   </Typography>
                 </Box>
@@ -871,14 +901,14 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
                   <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534' }}>技能包解析成功</Typography>
                 </Box>
                 <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px' }}>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '24px' }}>名称</Typography>
-                  <Typography sx={{ fontSize: '0.8rem', color: gs.textPrimary, fontWeight: 600, lineHeight: '24px' }}>{preview.name || '（未指定）'}</Typography>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '20px' }}>描述</Typography>
-                  <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, lineHeight: '20px' }}>{preview.description || '（无描述）'}</Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '24px' }}>名称</Typography>
+                  <Typography sx={{ fontSize: '0.8rem', color: '#111827', fontWeight: 600, lineHeight: '24px' }}>{preview.name || '（未指定）'}</Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>描述</Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#374151', lineHeight: '20px' }}>{preview.description || '（无描述）'}</Typography>
                   {preview.body && (
                     <>
-                      <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: '20px' }}>AI 上下文</Typography>
-                      <Typography sx={{ fontSize: '0.73rem', color: gs.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '20px' }}>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>AI 上下文</Typography>
+                      <Typography sx={{ fontSize: '0.73rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '20px' }}>
                         {preview.body.length > 60 ? `${preview.body.slice(0, 60)}...` : preview.body}
                       </Typography>
                     </>
@@ -890,55 +920,25 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
             {error && (
               <Alert
                 severity={preview ? 'warning' : 'error'}
-                sx={{ mt: 2, fontSize: '0.8rem', borderRadius: 2 }}
+                sx={{ mt: 2, fontSize: '0.8rem', borderRadius: '8px' }}
               >
                 {error}
               </Alert>
             )}
 
             {/* 技能包格式说明（折叠式） */}
-            <Box sx={{ mt: 2, p: 1.5, backgroundColor: gs.bgHover, borderRadius: '10px', border: `1px solid ${gs.border}` }}>
-              <Typography sx={{ fontSize: '0.73rem', fontWeight: 600, color: gs.textSecondary, mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <DescriptionIcon sx={{ fontSize: 13, color: gs.textDisabled }} /> SKILL.md 格式参考
+            <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#FFFFFF', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
+              <Typography sx={{ fontSize: '0.73rem', fontWeight: 600, color: '#374151', mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <DescriptionIcon sx={{ fontSize: 13, color: '#6B7280' }} /> SKILL.md 格式参考
               </Typography>
               <Box
                 component="pre"
-                sx={{ fontSize: '0.67rem', color: gs.textMuted, backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}
+                sx={{ fontSize: '0.67rem', color: '#6B7280', backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}
               >{`---\nname: 技能名称\ndescription: 技能描述\n---\n\nAI 上下文正文（作为技能模板注入）`}</Box>
             </Box>
           </>
         )}
-      </DialogContent>
-
-      {/* ZIP Tab 的底部操作 */}
-      {activeTab === 'zip' && (
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
-          <Button
-            onClick={handleClose}
-            sx={{ textTransform: 'none', color: gs.textMuted, borderRadius: 2, px: 2.5 }}
-          >
-            取消
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleInstall}
-            disabled={!file || loading}
-            sx={{
-              background: 'linear-gradient(135deg, #0F2027 0%, #2C5364 100%)',
-              '&:hover': { background: 'linear-gradient(135deg, #1a3a4a 0%, #3a6b7a 100%)' },
-              '&:disabled': { backgroundColor: gs.border, color: gs.textDisabled },
-              textTransform: 'none',
-              borderRadius: 2,
-              px: 3,
-              fontWeight: 600,
-              minWidth: 120,
-            }}
-          >
-            {loading ? <CircularProgress size={16} sx={{ color: gs.bgPanel, mr: 1 }} /> : null}
-            {loading ? '检查冲突中...' : '安装技能'}
-          </Button>
-        </DialogActions>
-      )}
+      </Box>
 
       {/* T04: ZIP 安装冲突确认弹窗 */}
       <ConflictConfirmDialog
@@ -991,7 +991,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
           }}
         />
       )}
-    </Dialog>
+    </SkillDialogShell>
   );
 };
 
