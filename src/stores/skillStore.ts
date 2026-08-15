@@ -113,7 +113,9 @@ export async function loadAllUsageStats(): Promise<void> {
   }
 }
 
-/** 全量从 API 刷新技能列表，触发 notifyAll() */
+/** 全量从 API 刷新技能列表，触发 notifyAll()
+ *  失败时静默降级到 localStorage 历史数据，不派发错误事件（避免后端未启动时toast打扰）
+ */
 export async function refreshFromRemote(): Promise<void> {
   try {
     const [skills, patches] = await Promise.all([
@@ -123,11 +125,13 @@ export async function refreshFromRemote(): Promise<void> {
     userSkills = skills;
     builtinStatusPatches = patches;
     await loadAllUsageStats();
+    skillLoadError = null;
     notifyAll();
   } catch (e) {
-    const msg = getErrorMessage(e);
-    skillLoadError = msg;
-    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'refreshFromRemote', error: msg } }));
+    skillLoadError = getErrorMessage(e);
+    // 静默降级：尝试读取 localStorage 历史迁移数据
+    loadLocalStorageFallback();
+    notifyAll();
   }
 }
 
@@ -322,8 +326,43 @@ export async function refreshAuditForSkill(skillId: string): Promise<void> {
   notifyAll();
 }
 
+/** localStorage key（与 migration.ts 对齐）：启动 API 不可达时作为静默降级数据源 */
+const LS_USER_SKILLS = 'cdf-know-clow-user-skills';
+const LS_BUILTIN_PATCHES = 'cdf-know-clow-builtin-status-patches';
+
+/** 从 localStorage 静默读取降级数据（后端不可达时不触发错误提示） */
+function loadLocalStorageFallback(): boolean {
+  let changed = false;
+  try {
+    const rawSkills = localStorage.getItem(LS_USER_SKILLS);
+    if (rawSkills) {
+      const parsed = JSON.parse(rawSkills);
+      if (Array.isArray(parsed)) {
+        userSkills = parsed as Skill[];
+        changed = true;
+      }
+    }
+  } catch { /* ignore */ }
+  try {
+    const rawPatches = localStorage.getItem(LS_BUILTIN_PATCHES);
+    if (rawPatches) {
+      const parsed = JSON.parse(rawPatches);
+      if (parsed && typeof parsed === 'object') {
+        builtinStatusPatches = parsed as Record<string, string>;
+        changed = true;
+      }
+    }
+  } catch { /* ignore */ }
+  return changed;
+}
+
 /** 从 API 初始化缓存（启动路径：只加载技能列表，不加载非关键的使用统计）
  *  包含自动重试（3 次，间隔 1s），避免服务重启时序导致的"技能加载失败"误报
+ *
+ *  所有重试失败：静默降级到 localStorage 中遗留的数据，不向用户显示错误 toast。
+ *  因为内置技能与 OpenClaw 技能通过前端懒加载也可获得可展示列表，
+ *  仅有 userSkills / builtinPatches 为空时不影响主要体验，
+ *  若用户有 localStorage 遗留迁移数据则继续使用，避免"请求失败"误报打扰首次启动。
  */
 export async function initFromApi(): Promise<void> {
   const maxRetries = 3;
@@ -346,7 +385,9 @@ export async function initFromApi(): Promise<void> {
       }
     }
   }
-  const msg = getErrorMessage(lastError);
-  skillLoadError = msg;
-  window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'initFromApi', error: msg } }));
+  // 记录错误以便 UI 在需要时读取（调试面板等），但不再派发全局错误事件。
+  skillLoadError = getErrorMessage(lastError);
+  // 静默降级：尝试读取 localStorage 历史迁移数据，让用户至少看到已有技能/状态。
+  loadLocalStorageFallback();
+  notifyAll();
 }

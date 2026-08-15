@@ -27,13 +27,13 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import CdfLogoAnimation from '../../assets/cdf-logo-animation.svg';
 const ChatSidePanel = React.lazy(() => import('./ChatSidePanel.js'));
 const TaskMonitorPanel = React.lazy(() => import('./TaskMonitorPanel.js').then(m => ({ default: m.TaskMonitorPanel })));
 import TerminalPanel from './TerminalPanel.js';
 import { ChatMessageList } from '../CrossWmsChat/ChatMessageList.js';
 import { TopBarChatInput } from '../CrossWmsChat/TopBarChatInput.js';
+import { ChatHero } from '../CrossWmsChat/ChatHero.js';
 import type { Message } from '../../types/chat.js';
 import { getAllSkills } from '../../stores/skillStore';
 import type { Skill } from '../../types/skill.js';
@@ -839,45 +839,50 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       compressionRatio: compactionInfo.compressionRatio,
     }] : [];
 
+    // 将 PendingMessage（useAgentChat 中）转换到 ChatItem：
+    // - failed → error 级 StatusNotice（带重试）
+    // - queued/sending → PendingSendChatItem（对话内部渲染用户名+时间，不再放独立提示条）
+    const pendingForItems: ChatItem[] = [];
+    const statusNotices: ChatItem[] = [];
+    for (const msg of pendingMessages) {
+      if (msg.state === 'failed') {
+        statusNotices.push({
+          kind: 'status-notice',
+          key: `pending-fail-${msg.id}`,
+          level: 'error',
+          text: `发送失败${msg.error ? `：${msg.error}` : ''}`,
+          actions: [{
+            label: '重试',
+            onClick: () => {
+              removePendingMessage(msg.id);
+              sendMessage(msg.content, { attachments: msg.attachments });
+            },
+          }],
+          autoDismissMs: 0,
+        });
+      } else {
+        pendingForItems.push({
+          kind: 'pending-send',
+          key: `pending-${msg.id}`,
+          text: msg.content,
+          attachments: msg.attachments,
+          state: msg.state,
+        });
+      }
+    }
+
     return buildChatItems(chatMessages, {
       showReadingIndicator: isLoading,
       readingIndicatorPhase: readingPhase,
       compactionDividers,
+      pendingMessages: pendingForItems.length
+        ? pendingForItems as any
+        : undefined,
+      statusNotices: statusNotices.length ? statusNotices as any : undefined,
     });
-  }, [chatMessages, isLoading, readingPhase, compactionInfo]);
+  }, [chatMessages, isLoading, readingPhase, compactionInfo, pendingMessages, removePendingMessage, sendMessage]);
 
   if (isPage) {
-    // 推导会话标题
-    const sessionTitle = session.title === t('新对话') || !session.title
-      ? (chatMessages[0]?.content?.slice(0, 24) || t('新对话'))
-      : session.title;
-
-    // v1.7.89: 收起侧边栏时标题栏与新建对话按钮同一行（fixed 定位）
-    const titleBarCollapsedSx = leftSidebarCollapsed
-      ? {
-          position: 'fixed' as const,
-          top: nativeApp ? '16px' : '10px',
-          left: nativeApp ? (isFullscreen ? '48px' : '150px') : '78px',
-          right: '16px',
-          zIndex: 1399,
-          pl: 0,
-          pr: 0,
-          py: 0,
-          height: '25.92px',
-          minHeight: '25.92px',
-          borderBottom: 'none',
-          WebkitAppRegion: 'no-drag',
-        }
-      : {
-          pl: 2,
-          pr: 2,
-          py: 0.75,
-          borderBottom: `1px solid ${gs.border}`,
-          flexShrink: 0,
-          minHeight: 40,
-          pt: 0.75,
-        };
-
     return (
       <>
       <Box sx={{
@@ -890,226 +895,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         overflow: 'hidden',
       }}>
         {/* v1.7.87: 空状态侧边栏按钮已移至 GlobalActionsBar，此处不再重复显示 */}
-        {/* 顶部标题栏：仅在有内容时显示（会话标题 + 文件夹路径 + 右侧按钮） */}
-        {/* v1.7.89: 收起侧边栏时，标题栏与新建对话按钮同一行（fixed 定位） */}
-        {!isEmpty && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            ...titleBarCollapsedSx,
-          }}
-        >
-          {/* v1.7.87: 侧边栏按钮已移至 GlobalActionsBar，标题直接从左侧开始 */}
-          <Typography
-            sx={{
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              color: gs.textPrimary,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              flex: 1,
-              minWidth: 0,
-            }}
-          >
-            {sessionTitle}
-          </Typography>
-          {session.folderId && (() => {
-            const folder = folders.find(f => f.id === session.folderId);
-            if (!folder) return null;
-            return (
-              <>
-                <Typography sx={{ fontSize: '0.9rem', color: gs.textMuted, fontWeight: 500, flexShrink: 0 }}>-</Typography>
-                <FolderOutlinedIcon sx={{ fontSize: 14, color: gs.textMuted, flexShrink: 0 }} />
-                <Typography
-                  sx={{
-                    fontSize: '0.85rem',
-                    fontWeight: 500,
-                    color: gs.textMuted,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    flexShrink: 0,
-                    maxWidth: 150,
-                  }}
-                >
-                  {folder.name}
-                </Typography>
-              </>
-            );
-          })()}
-          {/* 搜索框（展开时显示，替换搜索按钮） */}
-          {searchOpen ? (
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              borderRadius: '8px',
-              bgcolor: isDark ? '#374151' : '#F5F5F5',
-              height: 32,
-              width: 240,
-              pl: 1.5,
-              pr: 0.375,
-              gap: 0,
-              boxShadow: 'none',
-              border: 'none',
-            }}>
-              <SearchIcon sx={{ fontSize: 15, color: gs.textDisabled, flexShrink: 0, mr: 1 }} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder={t('搜索消息内容...')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setSearchOpen(false);
-                  }
-                }}
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  backgroundColor: 'transparent',
-                  fontSize: 13,
-                  color: isDark ? '#FFFFFF' : '#000000',
-                  padding: 0,
-                }}
-              />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <IconButton
-                  size="small"
-                  onClick={() => chatMessageListRef.current?.navigateToPrevSearchResult()}
-                  sx={{ color: gs.textDisabled, p: 0, '&:hover': { bgcolor: 'transparent', color: gs.textPrimary } }}
-                >
-                  <ArrowUpIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => chatMessageListRef.current?.navigateToNextSearchResult()}
-                  sx={{ color: gs.textDisabled, p: 0, '&:hover': { bgcolor: 'transparent', color: gs.textPrimary } }}
-                >
-                  <ArrowDownIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setSearchOpen(false);
-                    setSearchQuery('');
-                  }}
-                  sx={{ color: gs.textDisabled, p: 0, '&:hover': { bgcolor: 'transparent', color: gs.textPrimary } }}
-                >
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              </Box>
-            </Box>
-          ) : null}
-          {/* 右侧按钮组：搜索 + 终端 + 侧面板 */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            {!searchOpen && (
-              <Tooltip title={t('搜索消息')} arrow>
-                <IconButton
-                  size="small"
-                  onClick={() => setSearchOpen(true)}
-                  sx={{
-                    color: '#000',
-                    p: 0.36,
-                    bgcolor: 'transparent',
-                    '&:hover': { bgcolor: 'transparent', color: '#6366F1' },
-                  }}
-                >
-                  <SearchIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
-            )}
-            <Tooltip title={t('压缩对话')} arrow>
-              <IconButton
-                size="small"
-                onClick={() => {
-                  const messages = session.messages;
-                  if (messages.length < 8) {
-                    showToast(t('消息数量不足 8 条，无需压缩'), 'info', 2000);
-                    return;
-                  }
-                  showToast(t('正在压缩对话...'), 'info', 2000);
-                  compactSession(6).then((result) => {
-                    if (result.success && result.compressed) {
-                      showToast(t('对话压缩成功'), 'success', 2000);
-                    } else if (result.success && !result.compressed) {
-                      showToast(t('消息数量不足，无需压缩'), 'info', 2000);
-                    } else {
-                      showToast(t('压缩失败，请重试'), 'error', 3000);
-                    }
-                  }).catch(() => {
-                    showToast(t('压缩失败，请重试'), 'error', 3000);
-                  });
-                }}
-                sx={{
-                  color: '#000',
-                  p: 0.36,
-                  bgcolor: 'transparent',
-                  '&:hover': { bgcolor: 'transparent', color: '#000' },
-                }}
-              >
-                <svg width="13.3" height="13.3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 9l-7 7-7-7" />
-                </svg>
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={terminalOpen ? t('关闭终端') : t('打开终端')} arrow>
-              <IconButton
-                size="small"
-                onClick={() => {
-                  setTerminalOpen(prev => {
-                    const next = !prev;
-                    // 打开终端时收起侧面板和左侧侧边栏，避免同时显示
-                    if (next) {
-                      setSidePanelOpen(false);
-                      // 收起左侧侧边栏（互斥显示）
-                      if (!leftSidebarCollapsed) {
-                        window.dispatchEvent(new CustomEvent('cdf-toggle-sidebar'));
-                      }
-                    }
-                    return next;
-                  });
-                }}
-                sx={{
-                  color: '#000',
-                  p: 0.36,
-                  bgcolor: 'transparent',
-                  '&:hover': { bgcolor: 'transparent', color: '#000' },
-                }}
-              >
-                <TerminalButtonIcon size={13.3} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={sidePanelOpen ? t('收起侧面板') : t('展开侧面板')} arrow>
-            <IconButton
-              size="small"
-              onClick={() => {
-                setSidePanelOpen(prev => {
-                  const next = !prev;
-                  // 打开侧面板时收起终端，避免同时显示
-                  if (next) setTerminalOpen(false);
-                  return next;
-                });
-              }}
-              sx={{
-                color: '#000',
-                p: 0.36,
-                bgcolor: 'transparent',
-                '&:hover': { bgcolor: 'transparent', color: '#000' },
-              }}
-            >
-              {sidePanelOpen
-                ? <SidePanelCollapseIcon size={13.3} />
-                : <SidePanelExpandIcon size={13.3} />}
-            </IconButton>
-          </Tooltip>
-          </Box>
-        </Box>
-        )}
+        {/* 顶部标题栏（会话标题+文件夹）已删除 — AI白框顶部仅保留对话内容 */}
 
         <Box sx={{
           flex: 1,
@@ -1119,7 +905,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           overflow: 'hidden',
           pt: (!isEmpty && leftSidebarCollapsed) ? '42px' : 0,
         }}>
-        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', m: '6px', borderRadius: '6px', boxShadow: 'none' }}>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* v1.7.88: 历史对话切换中 — 撕开式转圈加载样式 */}
           {isSwitchingSession ? (
             <Box sx={{
@@ -1244,6 +1031,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                     </Box>
                   </>
                 )}
+
+                {/* C-4 Hero 空态及推荐prompt卡片已删除 — 用户要求：空界面仅展示上方品牌/初始skill */}
               </Box>
             </Box>
           ) : (
@@ -1275,22 +1064,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 externalSearchQuery={searchOpen ? searchQuery : ''}
                 debugMode={debugMode}
               />
-
-              {pendingMessages.length > 0 && (
-                <Box sx={{ maxWidth: currentMaxWidth, mx: 'auto', px: 3, py: 1 }}>
-                  {pendingMessages.map((msg) => (
-                    <PendingSendMessage
-                      key={msg.id}
-                      state={msg.state}
-                      error={msg.error}
-                      onRetry={() => {
-                        removePendingMessage(msg.id);
-                        sendMessage(msg.content, { attachments: msg.attachments });
-                      }}
-                    />
-                  ))}
-                </Box>
-              )}
 
               {/* 对话结束下方：生成文件能力 — 仅在非流式、有内容、有命名代码块时显示
                    （generatedFiles 已在 BotMessageContent 中展示，避免重复） */}
@@ -1416,7 +1189,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             </Box>
           )}
 
-          <Box sx={{ px: 3, pb: 3, pt: 'calc(1rem + 10px)', flexShrink: 0, borderTop: 'none' }}>
+          <Box sx={{ px: 3, pb: 3, pt: 1.5, flexShrink: 0, borderTop: 'none' }}>
             <Box sx={{
               maxWidth: currentMaxWidth,
               mx: 'auto',
@@ -1439,35 +1212,164 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             </Box>
           </Box>
         </Box>
-        {/* 右侧面板：待办 + 上下文 + 浏览器（仅在有内容时显示） */}
+        {/* === 白色对话框容器在此结束（只包对话内容） — 与任务面板/终端面板同属908行三平行区域父容器 === */}
+        {/* 右侧灰色面板（搜索/压缩/终端/侧面板 + 任务监控）— 与白框容器同级，三平行区域 */}
         {sidePanelOpen && !isEmpty && (
-          <Suspense fallback={null}>
-            <TaskMonitorPanel
-              sessionKey={session.id}
-              messages={chatMessages}
-            />
-          </Suspense>
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            width: 340,
+            flexShrink: 0,
+            m: '6px',
+            borderRadius: '6px',
+            overflow: 'hidden',
+            bgcolor: '#f5f5f5',
+            border: `1px solid ${gs.borderLighter}`,
+          }}>
+            {/* 顶部工具栏：搜索 + 压缩 + 终端 + 侧面板收起 — 背景灰色同任务监控 */}
+            <Box sx={{
+              px: 2,
+              py: 1.25,
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              borderBottom: '1px solid #e8e8e8',
+              bgcolor: '#f5f5f5',
+              gap: 0.5,
+            }}>
+              {searchOpen ? (
+                <Box sx={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '8px',
+                  bgcolor: isDark ? '#374151' : '#ffffff',
+                  height: 30,
+                  pl: 1,
+                  pr: 0.25,
+                }}>
+                  <SearchIcon sx={{ fontSize: 14, color: gs.textDisabled, flexShrink: 0, mr: 0.75 }} />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder={t('搜索消息...')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { setSearchOpen(false); } }}
+                    style={{
+                      flex: 1, border: 'none', outline: 'none',
+                      backgroundColor: 'transparent', fontSize: 12,
+                      color: isDark ? '#fff' : '#000', padding: 0, minWidth: 0,
+                    }}
+                  />
+                  <IconButton size="small" onClick={() => chatMessageListRef.current?.navigateToPrevSearchResult()} sx={{ color: gs.textDisabled, p: 0, '&:hover': { bgcolor: 'transparent' } }}>
+                    <ArrowUpIcon sx={{ fontSize: 12 }} />
+                  </IconButton>
+                  <IconButton size="small" onClick={() => chatMessageListRef.current?.navigateToNextSearchResult()} sx={{ color: gs.textDisabled, p: 0, '&:hover': { bgcolor: 'transparent' } }}>
+                    <ArrowDownIcon sx={{ fontSize: 12 }} />
+                  </IconButton>
+                  <IconButton size="small" onClick={() => { setSearchOpen(false); setSearchQuery(''); }} sx={{ color: gs.textDisabled, p: 0, '&:hover': { bgcolor: 'transparent' } }}>
+                    <CloseIcon sx={{ fontSize: 12 }} />
+                  </IconButton>
+                </Box>
+              ) : (
+                <>
+                  <Tooltip title={t('搜索消息')} arrow>
+                    <IconButton size="small" onClick={() => setSearchOpen(true)} sx={{ color: '#000', p: 0.5 }}>
+                      <SearchIcon sx={{ fontSize: 15 }} />
+                    </IconButton>
+                  </Tooltip>
+                </>
+              )}
+              <Box sx={{ flex: 1 }} />
+              <Tooltip title={t('压缩对话')} arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    const messages = session.messages;
+                    if (messages.length < 8) { showToast(t('消息数量不足 8 条，无需压缩'), 'info', 2000); return; }
+                    showToast(t('正在压缩对话...'), 'info', 2000);
+                    compactSession(6)
+                      .then((r) => {
+                        if (r.success && r.compressed) showToast(t('对话压缩成功'), 'success', 2000);
+                        else if (r.success && !r.compressed) showToast(t('消息数量不足，无需压缩'), 'info', 2000);
+                        else showToast(t('压缩失败，请重试'), 'error', 3000);
+                      })
+                      .catch(() => showToast(t('压缩失败，请重试'), 'error', 3000));
+                  }}
+                  sx={{ color: '#000', p: 0.5 }}
+                >
+                  <svg width="13.3" height="13.3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 9l-7 7-7-7" />
+                  </svg>
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={terminalOpen ? t('关闭终端') : t('打开终端')} arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setTerminalOpen(prev => {
+                      const next = !prev;
+                      if (next) {
+                        setSidePanelOpen(false);
+                        if (!leftSidebarCollapsed) window.dispatchEvent(new CustomEvent('cdf-toggle-sidebar'));
+                      }
+                      return next;
+                    });
+                  }}
+                  sx={{ color: '#000', p: 0.5 }}
+                >
+                  <TerminalButtonIcon size={13.3} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t('收起侧面板')} arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => setSidePanelOpen(false)}
+                  sx={{ color: '#000', p: 0.5 }}
+                >
+                  <SidePanelCollapseIcon size={13.3} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            <Suspense fallback={null}>
+              <TaskMonitorPanel
+                sessionKey={session.id}
+                messages={chatMessages}
+              />
+            </Suspense>
+          </Box>
         )}
-        {/* 终端面板（右侧） */}
+        {/* 终端面板（右侧，与白框容器+任务面板同级的第三平行区域） */}
         {terminalOpen && (
-          <TerminalPanel
-            onClose={() => {
-              setTerminalOpen(false);
-              // 关闭终端时，如果对话有内容，恢复侧边栏显示
-              if (chatMessages.length > 0) {
-                setSidePanelOpen(true);
-              }
-            }}
-            isLoading={isLoading}
-            error={error}
-            thinkingText={thinkingText}
-            hasThinking={hasThinking}
-            sendMessage={sendMessage}
-            stopGeneration={stopGeneration}
-            clearMessages={clearMessages}
-          />
+          <Box sx={{
+            flexShrink: 0,
+            m: '6px',
+            borderRadius: '6px',
+            overflow: 'hidden',
+            minWidth: 0,
+          }}>
+            <TerminalPanel
+              onClose={() => {
+                setTerminalOpen(false);
+                // 关闭终端时，如果对话有内容，恢复侧边栏显示
+                if (chatMessages.length > 0) {
+                  setSidePanelOpen(true);
+                }
+              }}
+              isLoading={isLoading}
+              error={error}
+              thinkingText={thinkingText}
+              hasThinking={hasThinking}
+              sendMessage={sendMessage}
+              stopGeneration={stopGeneration}
+              clearMessages={clearMessages}
+            />
+          </Box>
         )}
         </Box>
+      </Box>
       </Box>
 
       {/* 审批对话框 */}
@@ -1552,22 +1454,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             externalSearchQuery={searchOpen ? searchQuery : ''}
             debugMode={debugMode}
           />
-        )}
-
-        {pendingMessages.length > 0 && (
-          <Box sx={{ maxWidth: currentMaxWidth, mx: 'auto', px: 3, py: 1, width: '100%' }}>
-            {pendingMessages.map((msg) => (
-              <PendingSendMessage
-                key={msg.id}
-                state={msg.state}
-                error={msg.error}
-                onRetry={() => {
-                  removePendingMessage(msg.id);
-                  sendMessage(msg.content, { attachments: msg.attachments });
-                }}
-              />
-            ))}
-          </Box>
         )}
 
         {/* 对话结束下方：生成文件能力（embedded 变体） */}

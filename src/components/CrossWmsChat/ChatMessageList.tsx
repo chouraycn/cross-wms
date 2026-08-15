@@ -11,13 +11,18 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import XIcon from '@mui/icons-material/Close';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Message, Session } from '../../types/chat.js';
-import { ChatItem, isMessageItem, isDividerItem, isReadingIndicatorItem, isPendingSendItem } from '../../types/chat-items.js';
+import { ChatItem, isMessageItem, isDividerItem, isReadingIndicatorItem, isPendingSendItem, isStatusNoticeItem } from '../../types/chat-items.js';
 import { getGrayScale, CHAT_MAX_WIDTH } from '../../constants/theme.js';
 import { useAppearanceSettings } from '../../contexts/AppSettingsContext.js';
 import { ImageAttachment } from './ImageAttachment.js';
 import { BotMessageContent } from './BotMessageContent.js';
+import { RefChipRenderer } from './RefChipRenderer.js';
 import { CompactionDivider } from '../CDFChat/CompactionDivider.js';
 import { ReadingIndicator } from '../CDFChat/ReadingIndicator.js';
 import ReactPhaseIndicator from '../CDFChat/ReactPhaseIndicator.js';
@@ -678,7 +683,7 @@ export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageL
           }}
         >
           <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', userSelect: 'text', WebkitUserSelect: 'text' }}>
-            {msg.content}
+            <RefChipRenderer content={msg.content} />
           </Typography>
         </Box>
       ) : (
@@ -785,8 +790,73 @@ export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageL
       );
     }
 
+    if (isStatusNoticeItem(item)) {
+      const palette: Record<string, { bg: string; border: string; color: string; Icon: React.ElementType }> = {
+        error:   { bg: isDark ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.35)', color: '#DC2626', Icon: ErrorOutlineIcon },
+        warning: { bg: isDark ? 'rgba(245,158,11,0.12)' : 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.4)',  color: '#B45309', Icon: WarningAmberIcon },
+        info:    { bg: isDark ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)', border: 'rgba(59,130,246,0.35)', color: '#1D4ED8', Icon: InfoOutlinedIcon },
+        success: { bg: isDark ? 'rgba(34,197,94,0.12)'  : 'rgba(34,197,94,0.06)',  border: 'rgba(34,197,94,0.35)',  color: '#047857', Icon: CheckCircleOutlineIcon },
+      };
+      const p = palette[item.level] || palette.info;
+      const Icon = p.Icon;
+      return (
+        <Box
+          key={item.key}
+          sx={{
+            pt: index === 0 ? 0 : 2,
+            pb: 0.5,
+            px: 3,
+            maxWidth: CHAT_MAX_WIDTH,
+            width: '100%',
+            mx: 'auto',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1,
+              px: 1.5,
+              py: 1.25,
+              borderRadius: '10px',
+              bgcolor: p.bg,
+              border: `1px solid ${p.border}`,
+            }}
+          >
+            <Icon sx={{ fontSize: 16, color: p.color, mt: 0.125, flexShrink: 0 }} />
+            <Typography sx={{ fontSize: 12.5, lineHeight: 1.5, color: p.color, fontWeight: 500, flex: 1, minWidth: 0 }}>
+              {item.text}
+            </Typography>
+            {item.actions && item.actions.length > 0 && (
+              <Box sx={{ display: 'flex', flexShrink: 0, gap: 0.75, ml: 1, flexWrap: 'wrap' }}>
+                {item.actions.map((a, i) => (
+                  <button
+                    key={i}
+                    onClick={a.onClick}
+                    style={{
+                      border: `1px solid ${p.border}`,
+                      background: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
+                      color: p.color,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: '2px 10px',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </Box>
+            )}
+          </Box>
+        </Box>
+      );
+    }
+
     return null;
-  }, [renderMessageItem]);
+  }, [renderMessageItem, gs, isDark]);
 
   const displayData = searchQuery.trim() ? filteredData : data;
 

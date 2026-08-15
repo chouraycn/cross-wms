@@ -222,11 +222,11 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
       >
         {/* Left: Skills + Attach + More Actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          {/* Skills button — 仅图标 */}
+          {/* Skills button — 仅图标 (第一个 skill 选择) */}
           <Tooltip title="技能" placement="top">
             <Box
               ref={skillsBtnRef as React.RefObject<HTMLDivElement>}
-              onClick={(e) => { e.stopPropagation(); handleDropdownClick('skills'); }}
+              onClick={(e) => { e.stopPropagation(); ensureChainsLoaded(); handleDropdownClick('skills'); }}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -248,35 +248,6 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               <AutoFixHighIcon sx={{ fontSize: 18 }} />
             </Box>
           </Tooltip>
-
-          {/* Skill chains button — 仅图标，触发技能链执行 */}
-          {onChainSelect && (
-            <Tooltip title="技能链" placement="top">
-              <Box
-                ref={chainsBtnRef as React.RefObject<HTMLDivElement>}
-                onClick={(e) => { e.stopPropagation(); ensureChainsLoaded(); handleDropdownClick('chains'); }}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 30,
-                  height: 30,
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  color: gs.textMuted,
-                  '&:hover': {
-                    bgcolor: gs.bgHover,
-                    color: gs.textPrimary,
-                    transform: 'scale(1.05)',
-                  },
-                  userSelect: 'none',
-                }}
-              >
-                <AccountTreeIcon sx={{ fontSize: 18 }} />
-              </Box>
-            </Tooltip>
-          )}
 
           {/* Attach button — 仅图标 */}
           {onAttachClick && (
@@ -813,6 +784,54 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           }
           return result;
         })()}
+        {/* 技能链部分 — 放在技能列表最下方，在"查看全部技能"之前 */}
+        {onChainSelect && (
+          <>
+            <Divider sx={{ mx: 1.5, borderColor: gs.border }} />
+            <Typography sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: gs.textMuted, letterSpacing: '0.02em' }}>
+              技能链
+            </Typography>
+            {chains.length === 0 ? (
+              <Box sx={{ px: 2, py: 1 }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
+                  暂无可用技能链
+                </Typography>
+              </Box>
+            ) : (
+              chains.slice(0, 6).map((chain) => (
+                <MenuItem
+                  key={chain.id}
+                  onClick={() => { onChainSelect(chain); setActiveDropdown(null); }}
+                  sx={{ py: 0.75, px: 2, mx: 0.5, borderRadius: '8px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <AccountTreeIcon sx={{ fontSize: 18, color: gs.textMuted }} />
+                  </ListItemIcon>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: '0.8125rem', color: gs.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {chain.name}
+                    </Typography>
+                    {chain.description && (
+                      <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {chain.description}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Typography sx={{ fontSize: '0.65rem', color: gs.textMuted, ml: 1, flexShrink: 0 }}>
+                    {chain.nodes?.length ?? 0}节点
+                  </Typography>
+                </MenuItem>
+              ))
+            )}
+            <MenuItem
+              onClick={() => { setActiveDropdown(null); navigate('/skill-chains'); }}
+              sx={{ py: 0.75, mx: 0.5, borderRadius: '8px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
+            >
+              <ListItemIcon><SettingsIcon sx={{ fontSize: 16, color: gs.textMuted }} /></ListItemIcon>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>管理技能链 →</Typography>
+            </MenuItem>
+          </>
+        )}
         <Divider sx={{ mx: 1.5, borderColor: gs.border }} />
         <MenuItem
           onClick={() => { setActiveDropdown(null); navigate('/skills'); }}
@@ -822,76 +841,6 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>查看全部技能 →</Typography>
         </MenuItem>
       </Menu>
-
-      {/* Skill chains dropdown — 显示并执行技能链 */}
-      {onChainSelect && (
-        <Menu
-          anchorEl={chainsBtnRef.current}
-          open={activeDropdown === 'chains'}
-          onClose={() => setActiveDropdown(null)}
-          anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          slotProps={{
-            paper: {
-              sx: {
-                width: 280,
-                maxHeight: 400,
-                mt: -0.5,
-                borderRadius: '14px',
-                border: `1px solid ${gs.border}`,
-                boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-                bgcolor: gs.bgPanel,
-              },
-            },
-          }}
-          sx={{
-            '& .MuiBackdrop-root': {
-              backgroundColor: 'transparent',
-            },
-          }}
-        >
-          {chains.length === 0 ? (
-            <Box sx={{ px: 2, py: 1.5 }}>
-              <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>
-                暂无可用技能链
-              </Typography>
-            </Box>
-          ) : (
-            chains.slice(0, 12).map((chain) => (
-              <MenuItem
-                key={chain.id}
-                onClick={() => { onChainSelect(chain); setActiveDropdown(null); }}
-                sx={{ py: 0.75, px: 2, mx: 0.5, borderRadius: '8px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
-              >
-                <ListItemIcon sx={{ minWidth: 32 }}>
-                  <AccountTreeIcon sx={{ fontSize: 18, color: gs.textMuted }} />
-                </ListItemIcon>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: '0.8125rem', color: gs.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {chain.name}
-                  </Typography>
-                  {chain.description && (
-                    <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {chain.description}
-                    </Typography>
-                  )}
-                </Box>
-                <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, ml: 1, flexShrink: 0 }}>
-                  {chain.nodes?.length ?? 0} 节点
-                </Typography>
-              </MenuItem>
-            ))
-          )}
-          <Divider sx={{ mx: 1.5, borderColor: gs.border }} />
-          <MenuItem
-            onClick={() => { setActiveDropdown(null); navigate('/skill-chains'); }}
-            sx={{ py: 0.75, mx: 0.5, borderRadius: '8px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
-          >
-            <ListItemIcon><SettingsIcon sx={{ fontSize: 16, color: gs.textMuted }} /></ListItemIcon>
-            <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>管理技能链 →</Typography>
-          </MenuItem>
-        </Menu>
-      )}
 
     </>
   );

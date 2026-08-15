@@ -24,6 +24,8 @@ import type { IntentCategory, SkillChain } from '../../types/skill';
 import type { Attachment } from '../../types/chat';
 import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
+import { PermissionPreset, type PermissionLevel } from './PermissionPreset';
+import { ContextMeter } from './ContextMeter';
 import { useModels } from '../../contexts/ModelsContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useChatSession } from '../../contexts/ChatContext';
@@ -506,6 +508,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [selectedModel, setSelectedModel] = useState('Auto');
   const [selectedModelId, setSelectedModelId] = useState('auto');
   const [selectedPermission, setSelectedPermission] = useState(t('默认权限'));
+  const [permissionLevel, setPermissionLevel] = useState<PermissionLevel>('query');
   const [showAISettings, setShowAISettings] = useState(false);
 
   // v1.7.162: 跟踪用户是否主动选择了 Auto，防止 useEffect 覆盖
@@ -1294,6 +1297,25 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             )}
           </Box>
         )}
+        {/* C-5: 上下文计量表（无边框，不产生分隔线） */}
+        {(() => {
+          if (!session?.messages || session.messages.length === 0) return null;
+          const totalTokens = session.messages.reduce((sum, m) => sum + (m.usage?.totalTokens || 0), 0);
+          const modelConfig = modelList.find(m => m.id === session.model);
+          const maxTokens = modelConfig?.contextWindow || 128000;
+          return (
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              px: 1.5,
+              py: 0.25,
+              minHeight: 20,
+            }}>
+              <ContextMeter usedTokens={totalTokens} maxTokens={maxTokens} showLabel />
+            </Box>
+          );
+        })()}
         {/* Input area */}
         <Box
           onClick={handleInputClick}

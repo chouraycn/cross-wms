@@ -1060,32 +1060,6 @@ const StorageWarningListener: React.FC = () => {
   return null;
 };
 
-/** 技能初始化失败全局监听 — 启动期 initFromApi 失败时给出可见提示，而非静默空列表 */
-const SkillLoadErrorListener: React.FC = () => {
-  const { showToast } = useToast();
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail?.action !== 'initFromApi' && detail?.action !== 'refreshFromRemote') return;
-      // 安全字符串化：避免 error 为对象时显示 [object Object]
-      const raw = detail?.error;
-      let msg: string;
-      if (raw == null) msg = '未知错误';
-      else if (typeof raw === 'string') msg = raw;
-      else if (raw instanceof Error) msg = raw.message;
-      else if (typeof raw === 'object') {
-        const r = raw as any;
-        msg = r.userMessage || r.message || (() => { try { return JSON.stringify(raw); } catch { return String(raw); } })();
-      } else msg = String(raw);
-      const prefix = detail?.action === 'refreshFromRemote' ? '技能刷新失败' : '技能加载失败';
-      showToast(`${prefix}：${msg}`, 'error', 8000);
-    };
-    window.addEventListener('cdf-know-clow-api-error', handler);
-    return () => window.removeEventListener('cdf-know-clow-api-error', handler);
-  }, [showToast]);
-  return null;
-};
-
 /** 对话内技能创建/生效反馈 — 监听 SKILL_CREATED 事件弹出状态 toast */
 const SkillCreationListener: React.FC = () => {
   const { showToast } = useToast();
@@ -1263,7 +1237,6 @@ const MainLayout: React.FC = () => {
   return (
     <ToastProvider sidebarCollapsed={sidebarCollapsed}>
       <StorageWarningListener />
-      <SkillLoadErrorListener />
       <SkillCreationListener />
       {/* v1.5.107: 路由级会话同步 — 从非聊天页切回 /chat 时自动创建新会话 */}
       <ChatRouteSync />

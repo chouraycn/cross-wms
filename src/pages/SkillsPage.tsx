@@ -1346,7 +1346,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                   </Typography>
                 </Box>
               ) : (
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 2 }}>
                   {plugins.map((plugin) => (
                     <Box
                       key={plugin.id}
@@ -1587,7 +1587,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           {/* 卡片网格 — OpenClaw 原样式 */}
           <Box sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: 2,
           }}>
             {sortedBuiltinSkills.map((skill) => (
@@ -1603,7 +1603,9 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                   cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
+                  minWidth: 0,
                   minHeight: 0,
+                  overflow: 'hidden',
                   // 固定卡片最大高度，内容过多时区域内滚动，防止溢出视口
                   maxHeight: 280,
                 }}
@@ -1745,7 +1747,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           </Box>
           <Box sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: 2,
           }}>
             {featuredSkills.slice(0, 6).map(renderSkillCard)}
@@ -1870,7 +1872,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
             </Box>
             <Box sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gap: 2,
             }}>
               {items.map(renderSkillCard)}
@@ -1880,7 +1882,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
       ) : (
         <Box sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
           gap: 2,
         }}>
           {filteredSkills.map(renderSkillCard)}

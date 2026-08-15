@@ -207,33 +207,66 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
   }, [content]);
 
   // v2.8.1: 流式 Markdown 渲染节流
-  // 流式时 content 每 rAF 帧更新，但 Markdown 解析 + 语法高亮是 O(n) 操作
-  // 节流到每 150ms 重新解析一次，中间帧复用上一次的渲染结果
-  // 注意：所有 hooks 必须在 early return 之前调用（Rules of Hooks）
+  // vC-1: 增量 block 渲染 — 将内容拆分为「已完成 block」和「流式尾部」
+  // 已完成 block 锁定不重新解析，只有尾部 block 参与节流重渲染
+  // 避免：长文本流式时每次节流都全量重新解析 Markdown → 闪烁
   const [renderedContent, setRenderedContent] = useState(content);
   const lastRenderRef = useRef(0);
   const pendingContentRef = useRef(content);
   const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 缓存已完成的 block 内容，避免重复解析
+  const settledBlocksRef = useRef<string>('');
 
   useEffect(() => {
     pendingContentRef.current = content;
 
-    // 非流式：立即更新
+    // 非流式：立即更新，重置 settled 缓存
     if (!isStreaming) {
+      settledBlocksRef.current = '';
       setRenderedContent(content);
       return;
     }
 
-    // 流式：节流更新
+    // 流式：增量 block 拆分
+    // 找到最后一个完整 block 的边界（双换行、代码块结束符）
+    const lastSettled = settledBlocksRef.current;
+    let settledEnd = -1;
+
+    // 1. 查找最后一个 ``` 代码块结束位置
+    const codeBlockEnd = content.lastIndexOf('```');
+    if (codeBlockEnd >= 0) {
+      // 确保 ``` 后面有换行（表示代码块已闭合）
+      const afterFence = content.slice(codeBlockEnd + 3);
+      if (afterFence.includes('\n')) {
+        settledEnd = codeBlockEnd + 3 + afterFence.indexOf('\n') + 1;
+      }
+    }
+
+    // 2. 查找最后一个双换行（段落边界）
+    const lastParaBreak = content.lastIndexOf('\n\n');
+    if (lastParaBreak > settledEnd) {
+      settledEnd = lastParaBreak + 2;
+    }
+
+    // 3. 如果找不到明确的 block 边界，且内容较短，直接渲染全部
+    if (settledEnd < 0) {
+      settledEnd = 0;
+    }
+
+    // 更新已完成 block 缓存
+    if (settledEnd > lastSettled.length) {
+      settledBlocksRef.current = content.slice(0, settledEnd);
+    }
+
+    // 节流渲染
     const now = Date.now();
     const elapsed = now - lastRenderRef.current;
-    const THROTTLE_MS = 150;
+    const THROTTLE_MS = 120; // 从 150ms 降到 120ms，因为增量渲染更快
 
     if (elapsed >= THROTTLE_MS) {
       lastRenderRef.current = now;
       setRenderedContent(content);
     } else if (throttleTimerRef.current === null) {
-      // 安排延迟更新 — 取最新 pendingContentRef.current
       throttleTimerRef.current = setTimeout(() => {
         throttleTimerRef.current = null;
         lastRenderRef.current = Date.now();
