@@ -5,6 +5,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui';
+import { ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import IconChat from '../assets/icons/chat.svg?react';
@@ -43,6 +44,8 @@ export type EmployeeCardProps = {
   onAvatar: () => void;
   onEdit: () => void;
   onChat: () => void;
+  /** 打开能力清单（技能/工具/MCP）；仅 showMenu 卡片需要 */
+  onCapabilities?: () => void;
 };
 
 export default function EmployeeCard({
@@ -58,6 +61,7 @@ export default function EmployeeCard({
   onAvatar,
   onEdit,
   onChat,
+  onCapabilities,
 }: EmployeeCardProps) {
   const profile = employeeProfile(employee);
   const sopCount = resourceCount(employee.resources, 'skill');
@@ -174,6 +178,15 @@ export default function EmployeeCard({
             >
               <IconChat className="size-[16px]" />
               发起对话
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={MENU_ITEM_CLASS}
+              disabled={busy}
+              onClick={(event) => event.stopPropagation()}
+              onSelect={() => onCapabilities?.()}
+            >
+              <ListChecks className="size-[16px]" />
+              能力清单
             </DropdownMenuItem>
             {online ? (
               <DropdownMenuItem

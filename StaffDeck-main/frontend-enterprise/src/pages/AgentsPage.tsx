@@ -14,6 +14,7 @@ import { type EnterpriseAuthUser } from '../auth';
 import AppHeader from '../components/AppHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import EmployeeAvatarEditor from '../components/EmployeeAvatarEditor';
+import EmployeeCapabilitiesDialog from '../components/EmployeeCapabilitiesDialog';
 import EmployeeCard from '../components/EmployeeCard';
 import EmployeeProfileEditor from '../components/EmployeeProfileEditor';
 import {
@@ -43,6 +44,7 @@ export default function AgentsPage({
   const [loading, setLoading] = useState(false);
   const [avatarAgent, setAvatarAgent] = useState<AgentProfileRead | null>(null);
   const [profileAgent, setProfileAgent] = useState<AgentProfileRead | null>(null);
+  const [capabilitiesAgent, setCapabilitiesAgent] = useState<AgentProfileRead | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AgentProfileRead | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectingAgentId, setSelectingAgentId] = useState<string | null>(null);
@@ -298,6 +300,7 @@ export default function AgentsPage({
             onAvatar={() => setAvatarAgent(employee)}
             onEdit={() => setProfileAgent(employee)}
             onChat={() => startEmployeeChat(employee)}
+            onCapabilities={() => setCapabilitiesAgent(employee)}
           />
         ))}
         {!filteredEmployees.length && (
@@ -316,6 +319,12 @@ export default function AgentsPage({
         currentUser={currentUser}
         onClose={() => setProfileAgent(null)}
         onSaved={updateAgentInList}
+      />
+      <EmployeeCapabilitiesDialog
+        agentId={capabilitiesAgent ? capabilitiesAgent.id : null}
+        agentName={capabilitiesAgent ? employeeDisplayName(capabilitiesAgent) : ''}
+        open={Boolean(capabilitiesAgent)}
+        onClose={() => setCapabilitiesAgent(null)}
       />
       <ConfirmDialog
         open={Boolean(deleteTarget)}

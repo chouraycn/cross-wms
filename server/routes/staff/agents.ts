@@ -25,6 +25,7 @@ import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import * as agentDao from '../../dao/staff/staffAgentDao.js';
 import * as skillDao from '../../dao/staff/staffSkillDao.js';
 import * as toolDao from '../../dao/staff/staffToolDao.js';
+import * as generalSkillDao from '../../dao/staff/staffGeneralSkillDao.js';
 import * as kbDao from '../../dao/staff/staffKnowledgeBaseDao.js';
 import * as modelConfigDao from '../../dao/staff/staffModelConfigDao.js';
 import { autoSelectModel, type AutoSelectResult } from '../modelSelector.js';
@@ -350,10 +351,11 @@ router.get('/:agentId/capabilities', (req: Request, res: Response) => {
   const tenantId = tenantOf(req);
   const agentId = req.params.agentId;
 
-  // 技能：显式绑定 + 详情（含 content_json 里的 trigger 声明，若有）
+  // 技能：显式绑定（SOP=skill / 通用=general_skill）+ 详情（含 content_json 里的 trigger 声明，若有）
   const skillBindings = agentDao.listAgentResourceBindings(tenantId, agentId, 'skill');
-  const skills = skillBindings
-    .map((b: any) => {
+  const generalSkillBindings = agentDao.listAgentResourceBindings(tenantId, agentId, 'general_skill');
+  const skills = [
+    ...skillBindings.map((b: any) => {
       try {
         const row = skillDao.getSkillBySkillId(tenantId, String(b.resource_id));
         if (!row) return null;
@@ -372,13 +374,40 @@ router.get('/:agentId/capabilities', (req: Request, res: Response) => {
           description: row.description || '',
           version: row.version,
           status: row.status,
+          source: 'sop',
           triggers,
         };
       } catch {
         return null;
       }
-    })
-    .filter(Boolean);
+    }),
+    ...generalSkillBindings.map((b: any) => {
+      try {
+        const row = generalSkillDao.getGeneralSkillById(String(b.resource_id));
+        if (!row) return null;
+        let triggers: string[] = [];
+        try {
+          const meta = JSON.parse(String(row.metadata_json || '{}'));
+          const t = meta?.crosswms?.trigger || meta?.trigger;
+          if (typeof t === 'string') triggers = t.split('/').map((s: string) => s.trim()).filter(Boolean);
+          else if (Array.isArray(t)) triggers = t.map(String);
+        } catch {
+          /* 无 trigger 声明则留空 */
+        }
+        return {
+          id: row.slug || row.id,
+          name: row.name,
+          description: row.description || '',
+          version: undefined,
+          status: row.status,
+          source: 'general',
+          triggers,
+        };
+      } catch {
+        return null;
+      }
+    }),
+  ].filter(Boolean);
 
   // 工具：员工工具目录（sd_tools，tenant 维度；与 staffChatExecutor 注入口径一致）
   let tools: unknown[] = [];
