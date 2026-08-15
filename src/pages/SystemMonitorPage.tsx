@@ -388,222 +388,214 @@ const SystemMonitorPage: React.FC = () => {
       <Grid container spacing={3}>
         {/* 扩展类型分布 */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                扩展类型分布
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              扩展类型分布
+            </Typography>
+            {metrics && Object.keys(metrics.extensions.byKind).length > 0 ? (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>类型</TableCell>
+                      <TableCell align="right">数量</TableCell>
+                      <TableCell>占比</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(metrics.extensions.byKind)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([kind, count]) => {
+                        const total = metrics.extensions.total || 1;
+                        const percent = (count / total) * 100;
+                        return (
+                          <TableRow key={kind}>
+                            <TableCell>
+                              <Chip label={kind} size="small" />
+                            </TableCell>
+                            <TableCell align="right">{count}</TableCell>
+                            <TableCell sx={{ width: '50%' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={percent}
+                                  sx={{ flex: 1, height: 8, borderRadius: 4 }}
+                                />
+                                <Typography variant="caption" sx={{ minWidth: 40 }}>
+                                  {percent.toFixed(1)}%
+                                </Typography>
+          </Box>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                暂无扩展数据
               </Typography>
-              {metrics && Object.keys(metrics.extensions.byKind).length > 0 ? (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>类型</TableCell>
-                        <TableCell align="right">数量</TableCell>
-                        <TableCell>占比</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.entries(metrics.extensions.byKind)
-                        .sort(([, a], [, b]) => b - a)
-                        .map(([kind, count]) => {
-                          const total = metrics.extensions.total || 1;
-                          const percent = (count / total) * 100;
-                          return (
-                            <TableRow key={kind}>
-                              <TableCell>
-                                <Chip label={kind} size="small" />
-                              </TableCell>
-                              <TableCell align="right">{count}</TableCell>
-                              <TableCell sx={{ width: '50%' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <LinearProgress
-                                    variant="determinate"
-                                    value={percent}
-                                    sx={{ flex: 1, height: 8, borderRadius: 4 }}
-                                  />
-                                  <Typography variant="caption" sx={{ minWidth: 40 }}>
-                                    {percent.toFixed(1)}%
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  暂无扩展数据
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </Box>
         </Grid>
 
         {/* 消息生命周期分布 */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                消息生命周期
-              </Typography>
-              {metrics && Object.keys(metrics.messages.byPhase).length > 0 ? (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>阶段</TableCell>
-                        <TableCell align="right">数量</TableCell>
-                        <TableCell>占比</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {Object.entries(metrics.messages.byPhase)
-                        .sort(([, a], [, b]) => b - a)
-                        .map(([phase, count]) => {
-                          const total = metrics.messages.total || 1;
-                          const percent = (count / total) * 100;
-                          return (
-                            <TableRow key={phase}>
-                              <TableCell>
-                                <Chip
-                                  label={phase}
-                                  size="small"
-                                  color={
-                                    phase === 'sent' || phase === 'delivered' || phase === 'read'
-                                      ? 'success'
-                                      : phase === 'failed'
-                                      ? 'error'
-                                      : phase === 'active'
-                                      ? 'info'
-                                      : 'default'
-                                  }
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              消息生命周期
+            </Typography>
+            {metrics && Object.keys(metrics.messages.byPhase).length > 0 ? (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>阶段</TableCell>
+                      <TableCell align="right">数量</TableCell>
+                      <TableCell>占比</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(metrics.messages.byPhase)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([phase, count]) => {
+                        const total = metrics.messages.total || 1;
+                        const percent = (count / total) * 100;
+                        return (
+                          <TableRow key={phase}>
+                            <TableCell>
+                              <Chip
+                                label={phase}
+                                size="small"
+                                color={
+                                  phase === 'sent' || phase === 'delivered' || phase === 'read'
+                                    ? 'success'
+                                    : phase === 'failed'
+                                    ? 'error'
+                                    : phase === 'active'
+                                    ? 'info'
+                                    : 'default'
+                                }
+                              />
+                            </TableCell>
+                            <TableCell align="right">{count}</TableCell>
+                            <TableCell sx={{ width: '50%' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={percent}
+                                  sx={{ flex: 1, height: 8, borderRadius: 4 }}
                                 />
-                              </TableCell>
-                              <TableCell align="right">{count}</TableCell>
-                              <TableCell sx={{ width: '50%' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <LinearProgress
-                                    variant="determinate"
-                                    value={percent}
-                                    sx={{ flex: 1, height: 8, borderRadius: 4 }}
-                                  />
-                                  <Typography variant="caption" sx={{ minWidth: 40 }}>
-                                    {percent.toFixed(1)}%
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  暂无消息数据
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+                                <Typography variant="caption" sx={{ minWidth: 40 }}>
+                                  {percent.toFixed(1)}%
+                                </Typography>
+          </Box>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                暂无消息数据
+              </Typography>
+            )}
+          </Box>
         </Grid>
 
         {/* 重试队列 */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                重试队列
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={4}>
-                  <Box sx={{ textAlign: 'center', p: 2 }}>
-                    <PendingIcon color="info" sx={{ fontSize: 32, mb: 1 }} />
-                    <Typography variant="h5" fontWeight={600}>
-                      {metrics?.retryQueue.queued ?? '-'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      队列中
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={4}>
-                  <Box sx={{ textAlign: 'center', p: 2 }}>
-                    <ReplayIcon color="warning" sx={{ fontSize: 32, mb: 1 }} />
-                    <Typography variant="h5" fontWeight={600}>
-                      {metrics?.retryQueue.processing ?? '-'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      处理中
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={4}>
-                  <Box sx={{ textAlign: 'center', p: 2 }}>
-                    <ErrorOutlineIcon color="error" sx={{ fontSize: 32, mb: 1 }} />
-                    <Typography variant="h5" fontWeight={600}>
-                      {metrics?.retryQueue.deadLetter ?? '-'}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      死信
-                    </Typography>
-                  </Box>
-                </Grid>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              重试队列
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={4}>
+                <Box sx={{ textAlign: 'center', p: 2 }}>
+                  <PendingIcon color="info" sx={{ fontSize: 32, mb: 1 }} />
+                  <Typography variant="h5" fontWeight={600}>
+                    {metrics?.retryQueue.queued ?? '-'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    队列中
+                  </Typography>
+          </Box>
               </Grid>
-            </CardContent>
-          </Card>
+              <Grid item xs={4}>
+                <Box sx={{ textAlign: 'center', p: 2 }}>
+                  <ReplayIcon color="warning" sx={{ fontSize: 32, mb: 1 }} />
+                  <Typography variant="h5" fontWeight={600}>
+                    {metrics?.retryQueue.processing ?? '-'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    处理中
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={4}>
+                <Box sx={{ textAlign: 'center', p: 2 }}>
+                  <ErrorOutlineIcon color="error" sx={{ fontSize: 32, mb: 1 }} />
+                  <Typography variant="h5" fontWeight={600}>
+                    {metrics?.retryQueue.deadLetter ?? '-'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    死信
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+      </Box>
         </Grid>
 
         {/* 系统信息 */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                系统信息
-              </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>运行时间</TableCell>
-                      <TableCell align="right">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
-                          <TimerIcon fontSize="small" color="action" />
-                          <Typography>
-                            {metrics ? formatDuration(metrics.uptime) : '-'}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>RSS 内存</TableCell>
-                      <TableCell align="right">
-                        {metrics ? formatBytes(metrics.memory.rss) : '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>外部内存</TableCell>
-                      <TableCell align="right">
-                        {metrics ? formatBytes(metrics.memory.external) : '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>消息成功率</TableCell>
-                      <TableCell align="right">
-                        <Chip
-                          label={`${messageSuccessRate.toFixed(1)}%`}
-                          color={messageSuccessRate >= 95 ? 'success' : messageSuccessRate >= 80 ? 'warning' : 'error'}
-                          size="small"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              系统信息
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableBody>
+                  <TableRow>
+                    <TableCell>运行时间</TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+                        <TimerIcon fontSize="small" color="action" />
+                        <Typography>
+                          {metrics ? formatDuration(metrics.uptime) : '-'}
+                        </Typography>
+          </Box>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>RSS 内存</TableCell>
+                    <TableCell align="right">
+                      {metrics ? formatBytes(metrics.memory.rss) : '-'}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>外部内存</TableCell>
+                    <TableCell align="right">
+                      {metrics ? formatBytes(metrics.memory.external) : '-'}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>消息成功率</TableCell>
+                    <TableCell align="right">
+                      <Chip
+                        label={`${messageSuccessRate.toFixed(1)}%`}
+                        color={messageSuccessRate >= 95 ? 'success' : messageSuccessRate >= 80 ? 'warning' : 'error'}
+                        size="small"
+                      />
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         </Grid>
       </Grid>
 
@@ -711,57 +703,55 @@ const SystemMonitorPage: React.FC = () => {
       </Grid>
 
       {/* 最慢操作列表 */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" fontWeight={600} gutterBottom>
-            最慢操作
-          </Typography>
-          {performanceSummary && performanceSummary.slowestOperations.length > 0 ? (
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>操作名称</TableCell>
-                    <TableCell align="right">耗时 (ms)</TableCell>
-                    <TableCell align="right">时间戳</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {performanceSummary.slowestOperations.map((op) => (
-                    <TableRow key={op.id}>
-                      <TableCell>
-                        <Chip label={op.operation} size="small" variant="outlined" />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
-                          <LinearProgress
-                            variant="determinate"
-                            value={Math.min(op.duration / 10, 100)}
-                            sx={{ width: 60, height: 6, borderRadius: 3 }}
-                            color={op.duration >= 1000 ? 'error' : op.duration >= 500 ? 'warning' : 'success'}
-                          />
-                          <Typography variant="body2" fontWeight={600}>
-                            {op.duration.toFixed(2)}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(op.timestamp).toLocaleString()}
+      <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Typography variant="h6" fontWeight={600} gutterBottom>
+          最慢操作
+        </Typography>
+        {performanceSummary && performanceSummary.slowestOperations.length > 0 ? (
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>操作名称</TableCell>
+                  <TableCell align="right">耗时 (ms)</TableCell>
+                  <TableCell align="right">时间戳</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {performanceSummary.slowestOperations.map((op) => (
+                  <TableRow key={op.id}>
+                    <TableCell>
+                      <Chip label={op.operation} size="small" variant="outlined" />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.min(op.duration / 10, 100)}
+                          sx={{ width: 60, height: 6, borderRadius: 3 }}
+                          color={op.duration >= 1000 ? 'error' : op.duration >= 500 ? 'warning' : 'success'}
+                        />
+                        <Typography variant="body2" fontWeight={600}>
+                          {op.duration.toFixed(2)}
                         </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-              暂无性能数据
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
+      </Box>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(op.timestamp).toLocaleString()}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+            暂无性能数据
+          </Typography>
+        )}
+          </Box>
 
       {/* ===== 健康状态 ===== */}
       <Box sx={{ mt: 4, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -794,116 +784,112 @@ const SystemMonitorPage: React.FC = () => {
       <Grid container spacing={3}>
         {/* 健康检查 */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                健康检查
-              </Typography>
-              {healthStatus && healthStatus.checks.length > 0 ? (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>状态</TableCell>
-                        <TableCell>名称</TableCell>
-                        <TableCell align="right">延迟 (ms)</TableCell>
-                        <TableCell>消息</TableCell>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              健康检查
+            </Typography>
+            {healthStatus && healthStatus.checks.length > 0 ? (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>状态</TableCell>
+                      <TableCell>名称</TableCell>
+                      <TableCell align="right">延迟 (ms)</TableCell>
+                      <TableCell>消息</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {healthStatus.checks.map((check) => (
+                      <TableRow key={check.name}>
+                        <TableCell>
+                          <Chip
+                            icon={
+                              check.status === 'up' ? (
+                                <CheckCircleIcon />
+                              ) : check.status === 'down' ? (
+                                <CloudOffIcon />
+                              ) : (
+                                <ErrorOutlineIcon />
+                              )
+                            }
+                            label={check.status === 'up' ? '正常' : check.status === 'down' ? '宕机' : '降级'}
+                            color={
+                              check.status === 'up'
+                                ? 'success'
+                                : check.status === 'down'
+                                ? 'error'
+                                : 'warning'
+                            }
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>{check.name}</TableCell>
+                        <TableCell align="right">{check.latency.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Typography variant="caption" color="text.secondary">
+                            {check.message || '-'}
+                          </Typography>
+                        </TableCell>
                       </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {healthStatus.checks.map((check) => (
-                        <TableRow key={check.name}>
-                          <TableCell>
-                            <Chip
-                              icon={
-                                check.status === 'up' ? (
-                                  <CheckCircleIcon />
-                                ) : check.status === 'down' ? (
-                                  <CloudOffIcon />
-                                ) : (
-                                  <ErrorOutlineIcon />
-                                )
-                              }
-                              label={check.status === 'up' ? '正常' : check.status === 'down' ? '宕机' : '降级'}
-                              color={
-                                check.status === 'up'
-                                  ? 'success'
-                                  : check.status === 'down'
-                                  ? 'error'
-                                  : 'warning'
-                              }
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>{check.name}</TableCell>
-                          <TableCell align="right">{check.latency.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Typography variant="caption" color="text.secondary">
-                              {check.message || '-'}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  暂无健康检查数据
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                暂无健康检查数据
+              </Typography>
+            )}
+          </Box>
         </Grid>
 
         {/* 通道状态 */}
         <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                通道状态
-              </Typography>
-              {healthStatus && healthStatus.channels.length > 0 ? (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>状态</TableCell>
-                        <TableCell>名称</TableCell>
-                        <TableCell>类型</TableCell>
-                        <TableCell align="right">延迟 (ms)</TableCell>
+          <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              通道状态
+            </Typography>
+            {healthStatus && healthStatus.channels.length > 0 ? (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>状态</TableCell>
+                      <TableCell>名称</TableCell>
+                      <TableCell>类型</TableCell>
+                      <TableCell align="right">延迟 (ms)</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {healthStatus.channels.map((channel) => (
+                      <TableRow key={channel.name}>
+                        <TableCell>
+                          <Chip
+                            icon={
+                              channel.status === 'up' ? <CheckCircleIcon /> : <CloudOffIcon />
+                            }
+                            label={channel.status === 'up' ? '正常' : '宕机'}
+                            color={channel.status === 'up' ? 'success' : 'error'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>{channel.name}</TableCell>
+                        <TableCell>
+                          <Chip label={channel.type} size="small" variant="outlined" />
+                        </TableCell>
+                        <TableCell align="right">{channel.latency.toFixed(2)}</TableCell>
                       </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {healthStatus.channels.map((channel) => (
-                        <TableRow key={channel.name}>
-                          <TableCell>
-                            <Chip
-                              icon={
-                                channel.status === 'up' ? <CheckCircleIcon /> : <CloudOffIcon />
-                              }
-                              label={channel.status === 'up' ? '正常' : '宕机'}
-                              color={channel.status === 'up' ? 'success' : 'error'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>{channel.name}</TableCell>
-                          <TableCell>
-                            <Chip label={channel.type} size="small" variant="outlined" />
-                          </TableCell>
-                          <TableCell align="right">{channel.latency.toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  暂无通道数据
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                暂无通道数据
+              </Typography>
+            )}
+          </Box>
         </Grid>
       </Grid>
     </Box>
