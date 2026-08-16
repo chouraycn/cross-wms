@@ -708,17 +708,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                 );
               })}
 
-            {/* 无已启用模型提示 */}
-            {modelOptions.filter(o => o.provider !== 'auto').length === 0 && !modelsLoading && (
-              <Box sx={{ px: 2, py: 1, mx: 0.5, borderRadius: '10px', bgcolor: isDark ? '#2A1A0A' : '#FFF7ED' }}>
-                <Typography sx={{ fontSize: '0.75rem', color: ACCENT, fontWeight: 500 }}>
-                  尚未启用任何模型
-                </Typography>
-                <Typography sx={{ fontSize: '0.6875rem', color: gs.textMuted, mt: 0.25 }}>
-                  请在模型管理中添加 API Key 并启用模型
-                </Typography>
-              </Box>
-            )}
+            {/* 无已启用模型提示 — 已取消（内容中已有提醒） */}
           </Box>
 
           {/* 底部：固定的添加模型按钮 */}

@@ -324,6 +324,11 @@ if [[ "$HAS_BACKGROUND" == "0" || "${SKIP_DMG_STYLE:-0}" == "1" ]]; then
     -format ULMO \
     "$OUT_PATH" 2>&1; then
     hdiutil verify "$OUT_PATH" >/dev/null 2>&1 && echo "✅ DMG 创建成功（快速模式 + .DS_Store 模板）: $OUT_PATH" || echo "⚠️ DMG 创建完成但校验失败: $OUT_PATH"
+
+    # 移除隔离属性，避免 macOS 弹出「已损坏/无法打开」
+    xattr -d com.apple.quarantine "$OUT_PATH" 2>/dev/null || true
+    xattr -cr "$APP_PATH" 2>/dev/null || true
+
     rm -rf "$DMG_SOURCE"
     exit 0
   else
@@ -396,6 +401,11 @@ if [[ "$UDRW_OK" == "0" || "$ATTACH_OK" == "0" ]]; then
   else
     echo "⚠️ DMG 创建完成但校验失败: $OUT_PATH"
   fi
+
+  # 移除隔离属性，避免 macOS 弹出「已损坏/无法打开」
+  xattr -d com.apple.quarantine "$OUT_PATH" 2>/dev/null || true
+  xattr -cr "$APP_PATH" 2>/dev/null || true
+
   # 清理临时目录
   rm -rf "$DMG_SOURCE"
   exit 0
@@ -491,4 +501,14 @@ hdiutil convert "$DMG_RW_PATH" -format ULMO -o "$DMG_FINAL_PATH" -ov
 
 hdiutil verify "$DMG_FINAL_PATH" >/dev/null
 mv -f "$DMG_FINAL_PATH" "$OUT_PATH"
+
+# 移除 DMG 本身的隔离属性（浏览器下载/沙箱创建后macOS会附加quarantine，
+# 导致双击弹出「已损坏」或「无法打开」提示）
+xattr -d com.apple.quarantine "$OUT_PATH" 2>/dev/null || true
+# 递归清理 DMG_SOURCE 临时目录上可能残留的隔离属性（若用户用浏览器拖入源文件）
+xattr -cr "$APP_PATH" 2>/dev/null || true
+
+# 签名后的 .app 已在构建阶段 codesign 完成；此处再次验证签名完整性
+codesign --verify --deep --strict --verbose=1 "$APP_PATH" >/dev/null 2>&1 || true
+
 echo "✅ DMG ready: $OUT_PATH"

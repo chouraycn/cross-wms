@@ -17,6 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AppPaths } from '../config/appPaths.js';
 import { logger } from '../logger.js';
+import { getGuardConfig } from './guardConfig.js';
 
 // ===================== 类型定义 =====================
 
@@ -112,10 +113,11 @@ export class CircuitBreaker {
   private snapshotTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(config?: CircuitBreakerConfig) {
-    this.halfOpenThreshold = config?.halfOpenThreshold ?? DEFAULT_HALF_OPEN_THRESHOLD;
-    this.openThreshold = config?.openThreshold ?? DEFAULT_OPEN_THRESHOLD;
-    this.openCooldownMs = config?.openCooldownMs ?? DEFAULT_OPEN_COOLDOWN_MS;
-    this.maxHalfOpenConcurrent = config?.maxHalfOpenConcurrent ?? DEFAULT_MAX_HALF_OPEN_CONCURRENT;
+    const guard = getGuardConfig().circuitBreaker;
+    this.halfOpenThreshold = config?.halfOpenThreshold ?? guard.halfOpenThreshold;
+    this.openThreshold = config?.openThreshold ?? guard.openThreshold;
+    this.openCooldownMs = config?.openCooldownMs ?? guard.openCooldownMs;
+    this.maxHalfOpenConcurrent = config?.maxHalfOpenConcurrent ?? guard.maxHalfOpenConcurrent;
     this.snapshotPath = path.join(AppPaths.dataDir, SNAPSHOT_FILE);
     this.loadSnapshot();
   }

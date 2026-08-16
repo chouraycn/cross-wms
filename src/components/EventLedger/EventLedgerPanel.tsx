@@ -16,6 +16,8 @@ import {
   TextField,
   Button,
   IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
   Paper,
   Chip,
   CircularProgress,
@@ -60,7 +62,8 @@ import {
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { getGrayScale } from '../../constants/theme';
-import { eventLedgerApi, LedgerEvent, SessionMeta, LedgerStats } from '../../services/eventLedgerApi';
+import { eventLedgerApi, LedgerEvent, SessionMeta, LedgerStats, StepTimelineTurn } from '../../services/eventLedgerApi';
+import StepTimelineView from './StepTimelineView';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -161,6 +164,11 @@ const EventLedgerPanel: React.FC = () => {
   const [events, setEvents] = useState<LedgerEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
 
+  // P1a：step 时间线视图
+  const [viewMode, setViewMode] = useState<'events' | 'timeline'>('events');
+  const [timeline, setTimeline] = useState<StepTimelineTurn[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+
   // 查询条件
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
@@ -260,6 +268,29 @@ const EventLedgerPanel: React.FC = () => {
     }
   }, [selectedSessionId, eventTypeFilter, timeRangeStart, timeRangeEnd, limit]);
 
+  // ==================== 加载 step 时间线（P1a） ====================
+
+  const loadTimeline = useCallback(async () => {
+    if (!selectedSessionId) {
+      setTimeline([]);
+      return;
+    }
+    setTimelineLoading(true);
+    setError(null);
+    try {
+      const res = await eventLedgerApi.getTimeline(selectedSessionId);
+      if (res.ok && res.data) {
+        setTimeline(res.data);
+      } else {
+        setError(res.error || '获取 step 时间线失败');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '网络错误');
+    } finally {
+      setTimelineLoading(false);
+    }
+  }, [selectedSessionId]);
+
   // ==================== 初始化加载 ====================
 
   useEffect(() => {
@@ -272,6 +303,13 @@ const EventLedgerPanel: React.FC = () => {
       loadEvents();
     }
   }, [selectedSessionId, loadEvents]);
+
+  // 时间线模式或会话变化时加载 step 时间线
+  useEffect(() => {
+    if (selectedSessionId && viewMode === 'timeline') {
+      loadTimeline();
+    }
+  }, [selectedSessionId, viewMode, loadTimeline]);
 
   // ==================== 统计图表数据 ====================
 
@@ -643,10 +681,10 @@ const EventLedgerPanel: React.FC = () => {
               <Box sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                 <EventIcon sx={{ fontSize: 16, color: gs.textSecondary }} />
                 <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary }}>
-                  事件列表
+                  {viewMode === 'events' ? '事件列表' : 'Step 时间线'}
                 </Typography>
                 <Chip
-                  label={`${events.length} 个`}
+                  label={viewMode === 'events' ? `${events.length} 个` : `${timeline.length} 回合`}
                   size="small"
                   sx={{
                     height: 18,
@@ -654,8 +692,24 @@ const EventLedgerPanel: React.FC = () => {
                     backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.08)',
                   }}
                 />
+                <Box sx={{ flex: 1 }} />
+                <ToggleButtonGroup
+                  size="small"
+                  exclusive
+                  value={viewMode}
+                  onChange={(_e, v) => { if (v) setViewMode(v); }}
+                >
+                  <ToggleButton value="events" sx={{ fontSize: '0.7rem', py: 0.25 }}>
+                    事件
+                  </ToggleButton>
+                  <ToggleButton value="timeline" sx={{ fontSize: '0.7rem', py: 0.25 }}>
+                    Step 时间线
+                  </ToggleButton>
+                </ToggleButtonGroup>
               </Box>
-              {eventsLoading ? (
+              {viewMode === 'timeline' ? (
+                <StepTimelineView turns={timeline} loading={timelineLoading} />
+              ) : eventsLoading ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                   <CircularProgress size={24} />
                 </Box>

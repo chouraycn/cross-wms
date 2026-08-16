@@ -32,9 +32,10 @@ describe('Chat API E2E 测试', () => {
         .get('/api/queue-status/test-session');
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('sessionId', 'test-session');
-      expect(response.body).toHaveProperty('state');
-      expect(response.body).toHaveProperty('queueLength');
+      expect(response.body.code).toBe(0);
+      expect(response.body.data).toHaveProperty('sessionId', 'test-session');
+      expect(response.body.data).toHaveProperty('state');
+      expect(response.body.data).toHaveProperty('queueLength');
     });
   });
 

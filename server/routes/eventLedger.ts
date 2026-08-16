@@ -7,6 +7,7 @@
 import { Router } from 'express';
 import { getEventLedger } from '../engine/eventLedger.js';
 import { getEventPolicy } from '../engine/eventPolicy.js';
+import { foldStepTimeline } from '../engine/eventQuery.js';
 import { logger } from '../logger.js';
 
 const router = Router();
@@ -63,6 +64,32 @@ router.get('/sessions/:sessionId/events', async (req, res) => {
     });
   } catch (err) {
     logger.error('[EventLedgerRoute] 查询事件失败:', err);
+    res.status(500).json({
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+});
+
+// 会话 step 时间线（P1a：turn/step 词表可检索视图）
+// 与 /events 同源：先经事件策略（脱敏/过滤），再折叠为 回合 → step → 工具调用 → 渠道投递 → 压缩 视图。
+router.get('/sessions/:sessionId/timeline', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const events = await getEventLedger().getSessionEvents(sessionId);
+    const filtered = applyEventPolicy(events);
+    const turns = foldStepTimeline(
+      filtered.map((e) => ({
+        seq: e.seq,
+        type: e.type,
+        payload: (e.payload ?? {}) as Record<string, unknown>,
+        timestamp: e.timestamp,
+        runId: e.runId,
+      })),
+    );
+    res.json({ ok: true, data: turns, count: turns.length });
+  } catch (err) {
+    logger.error('[EventLedgerRoute] 查询 step 时间线失败:', err);
     res.status(500).json({
       ok: false,
       error: err instanceof Error ? err.message : String(err),

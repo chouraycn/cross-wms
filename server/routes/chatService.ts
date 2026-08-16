@@ -44,6 +44,7 @@ import { getThinkingCacheKey, getThinkingCache, setThinkingCache } from './chatH
 import { activeSSEConnections } from './chatHelpers/sseHelper.js';
 import { TimerManager } from '../sse/timerManager.js';
 import { executeChat as streamExecuteChat, type ExecuteChatCallbacks } from '../engine/streamExecutor.js';
+import { buildModelVisibleTokens } from '../engine/auditInvariant.js';
 import { runChatSession, runChatSessionStream } from '../engine/runChatSession.js';
 import { pipeEventStreamToSSE, createAssistantMessageEventStream, type AssistantMessageEventStream, type AssistantMessage } from '../sse/openclawSSE.js';
 import { formatMemoryContext } from '../engine/contextEnhancer.js';
@@ -55,6 +56,7 @@ import { errorLogger } from '../engine/error-handling/error-logger.js';
 import {
   buildApiMessages,
   hasImageAttachment,
+  SYSTEM_PROMPT_VERSION,
 } from '../engine/buildApiMessages.js';
 import { resolveSkillContext, extractContextTexts } from '../engine/skillRouter.js';
 
@@ -309,6 +311,11 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
         skillId: skillId || null,
         toolCalls: fbResult.toolCalls?.length > 0 ? JSON.stringify(fbResult.toolCalls) : undefined,
       });
+      // 审计入账：降级路径 assistant 消息入账（messageId 用生成值）
+      Promise.resolve(recordMessageCreated(sessionId, `fallback-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, 'assistant', fbResult.content, {
+        model: fbModel.id,
+        toolCalls: fbResult.toolCalls,
+      })).catch(() => {});
     }
 
     if (fbKey && fbKey.index >= 0) {
@@ -521,6 +528,9 @@ async function executeQueuedMessage(
       userMessage: params.message,
       model: params.model,
       executionMode: effectiveMode,
+      systemPromptVersion: SYSTEM_PROMPT_VERSION,
+      // 与下方 executeChat 的 estimatedToolsCount 保持一致（队列路径当前为固定 30）
+      toolSchemaCount: 30,
       runId,
     });
 
@@ -535,6 +545,7 @@ async function executeQueuedMessage(
       modelName: params.modelName,
       modelConfig: finalModelConfig,
       apiMessages,
+      auditTokens: buildModelVisibleTokens(dbMessages),
       executionMode: effectiveMode,
       timerManager,
       signal: abortController.signal,
@@ -562,6 +573,13 @@ async function executeQueuedMessage(
       thinking: result.thinkingContent || undefined,
       thinkingDuration: result.thinkingDuration || undefined,
     });
+    // 审计入账：assistant 消息记入事件账本（队列路径）
+    Promise.resolve(recordMessageCreated(sessionId, params.assistantId, 'assistant', result.content, {
+      model: params.model,
+      toolCalls: result.toolCalls,
+      thinking: result.thinkingContent,
+      runId,
+    })).catch(() => {});
 
     await recordTurnCompleted(sessionId, {
       assistantContent: result.content,

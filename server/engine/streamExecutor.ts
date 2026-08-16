@@ -17,6 +17,8 @@ import type { ExecutionStrategyOptions } from './executionStrategy.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
 import { enhanceInBackground, type EnhancementResult } from './contextEnhancer.js';
 import { sanitizeToolMessages } from './contextTruncate.js';
+import { auditModelVisibleLogged } from './auditInvariant.js';
+import { getGuardConfig } from './guardConfig.js';
 import { TimerManager } from '../sse/timerManager.js';
 import { type ToolProfileId } from './toolProfiles.js';
 import type { SkillPermissionConfig, SkillDefinition, SkillContext, SkillResult } from '../types/skill-runtime.js';
@@ -118,6 +120,12 @@ export interface ExecuteChatParams {
     thresholdRatio?: number;
     preserveRecent?: number;
   };
+  /**
+   * 审计不变量："模型可见 ⟺ 已落库"。
+   * 由调用方用 buildModelVisibleTokens(dbMessages) 构建后传入；
+   * 传入时在 executeChat 入口对 apiMessages 做已落库校验（软模式计数 / 严格模式抛错）。
+   */
+  auditTokens?: Set<string>;
   /** 程序技能（skill）权限配置：数字员工执行时按启用的程序技能做 opt-in 门控 */
   skillPermissionConfig?: SkillPermissionConfig;
   /** 数字员工（per-call）MCP 客户端管理器：隔离的 MCP server 连接 */
@@ -276,6 +284,17 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
   // 启动 keepAlive 心跳
   timerManager.start('main');
 
+  // 审计不变量："模型可见 ⟺ 已落库"。调用方传了 auditTokens 才校验（软模式计数 / 严格模式抛错）。
+  if (params.auditTokens) {
+    auditModelVisibleLogged({
+      apiMessages,
+      dbTokens: params.auditTokens,
+      currentUserMessage: params.message,
+      sessionId: params.sessionId,
+      context: params.fromQueue ? 'executeChat:queue' : 'executeChat',
+    });
+  }
+
   let fullContent = '';
   let thinkingContent = '';
   let hasThinking = false;
@@ -310,7 +329,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
     const strategyOptions: ExecutionStrategyOptions = {
       modelConfig,
       messages: sanitizeToolMessages(apiMessages) as Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>,
-      maxToolTurns: 25,
+      maxToolTurns: getGuardConfig().maxToolTurns,
       signal: params.signal ?? new AbortController().signal,
       executionMode: params.executionMode,
       sessionId: params.sessionId,

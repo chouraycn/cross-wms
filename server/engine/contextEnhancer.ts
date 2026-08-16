@@ -169,6 +169,10 @@ async function compressInBackground(
       params.ctxMaxTokens,
       params.estimatedToolsCount,
       params.modelConfig,
+      undefined,
+      undefined,
+      undefined,
+      { sessionId: params.sessionId },
     );
     return {
       messages: compressResult.messages,

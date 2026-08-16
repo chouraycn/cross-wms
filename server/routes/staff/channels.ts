@@ -35,13 +35,15 @@
  */
 import { Router, type Request, type Response } from 'express';
 import { initDb } from '../../db.js';
+import { recordChannelDelivered } from '../../engine/eventRecorder.js';
 import {
   DEFAULT_TENANT_ID,
   newStaffId,
   StaffIdPrefix,
 } from '../../db-staff.js';
-import { sendWeComMessage, sendWeComWebhook, probeWeCom } from '../../../extensions/wecom/index.js';
-import { sendWeChatCustomerMessage, probeWeChat } from '../../../extensions/wechat/index.js';
+import { probeWeCom } from '../../../extensions/wecom/index.js';
+import { probeWeChat } from '../../../extensions/wechat/index.js';
+import { dispatchChannelSend } from '../../staff/channelSeam.js';
 import { logger } from '../../logger.js';
 import type Database from 'better-sqlite3';
 
@@ -428,6 +430,8 @@ export interface DeliverToChannelOptions {
   type?: 'text' | 'alert' | 'card';
   /** 企微 userid / 公众号 openid（缺省：企微 @all，公众号用绑定配置 openid） */
   toUser?: string;
+  /** P1a：关联的员工会话 ID（可选）。传入时把投递记入该会话的账本（channel.delivered），可按 step 检索 */
+  sessionId?: string;
 }
 
 /**
@@ -481,67 +485,24 @@ export async function deliverToChannel(opts: DeliverToChannelOptions): Promise<{
   let externalId: string | null = null;
 
   try {
-    if (binding.channel === 'wecom') {
-      const corpId = String(config.corp_id || config.corpId || '');
-      const corpSecret = String(config.corp_secret || config.corpSecret || '');
-      const agentId = String(config.agent_id || config.bot_id || '');
-      const webhookUrl = String(config.webhook_url || '');
-      if (webhookUrl) {
-        const result = await sendWeComWebhook(webhookUrl, { msgtype: 'text', content: opts.content });
-        if (!result.success) {
-          status = 'failed';
-          errorMsg = result.error ?? null;
-        } else {
-          externalId = result.messageId ?? null;
-        }
-      } else if (corpId && corpSecret && agentId) {
-        const result = await sendWeComMessage({
-          account: {
-            corpId,
-            corpSecret,
-            agentId,
-            token: config.token !== undefined ? String(config.token) : undefined,
-            encodingAesKey: config.encoding_aes_key !== undefined ? String(config.encoding_aes_key) : undefined,
-          },
-          toUser: opts.toUser,
-          msgtype: 'markdown',
-          markdown: opts.content,
-        });
-        if (!result.success) {
-          status = 'failed';
-          errorMsg = result.error ?? null;
-        } else {
-          externalId = result.messageId ?? null;
-        }
-      } else {
-        // 无凭证：demo 记录
-        status = 'delivered';
-      }
-    } else if (binding.channel === 'wechat') {
-      const appId = String(config.app_id || '');
-      const appSecret = String(config.app_secret || '');
-      const openid = String(opts.toUser || config.openid || '');
-      if (appId && appSecret && openid) {
-        const result = await sendWeChatCustomerMessage({
-          account: { appId, appSecret },
-          toUser: openid,
-          msgtype: 'text',
-          content: opts.content,
-        });
-        if (!result.success) {
-          status = 'failed';
-          errorMsg = result.error ?? null;
-        } else {
-          externalId = result.messageId ?? null;
-        }
-      } else if (!openid) {
+    // P1b：经渠道缝（channelSeam）分发 —— 换渠道/加渠道不动消费方
+    const providerResult = await dispatchChannelSend({
+      tenantId,
+      channel: binding.channel,
+      config,
+      toUser: opts.toUser,
+      content: opts.content,
+      msgtype: type,
+    });
+    if (providerResult) {
+      if (!providerResult.success) {
         status = 'failed';
-        errorMsg = '公众号投递缺少接收用户 openid（绑定配置 openid 或 opts.toUser）';
+        errorMsg = providerResult.error ?? null;
       } else {
-        status = 'delivered'; // 无凭证：demo 记录
+        externalId = providerResult.messageId ?? null;
       }
     }
-    // feishu 及其他渠道：真实推送由 channel plugin / 外部网关承担，此处保留 demo 记录
+    // providerResult === null：渠道未注册（feishu 等），真实推送由 channel plugin / 外部网关承担，保留 demo 记录
   } catch (err) {
     status = 'failed';
     errorMsg = err instanceof Error ? err.message : String(err);
@@ -586,6 +547,22 @@ export async function deliverToChannel(opts: DeliverToChannelOptions): Promise<{
   } else if (externalId) {
     logger.info(`[Channels] 渠道投递成功: channel=${binding.channel} delivery=${id} external=${externalId}`);
   }
+
+  // P1a：投递入账 — 关联会话时记录 channel.delivered 事件（渠道审计可按 step 检索）
+  if (opts.sessionId) {
+    Promise.resolve(
+      recordChannelDelivered(opts.sessionId, {
+        deliveryId: id,
+        channel: binding.channel,
+        tenantId,
+        agentId: binding.agent_id,
+        status,
+        externalId: externalId ?? undefined,
+        error: errorMsg ?? undefined,
+      }),
+    ).catch(() => undefined);
+  }
+
   return { ok: status !== 'failed', delivery, error: errorMsg ?? undefined };
 }
 

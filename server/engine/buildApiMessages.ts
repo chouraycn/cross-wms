@@ -26,6 +26,15 @@ import { logger } from '../logger.js';
 
 import type { Message } from '../db-chat.js';
 
+// ===================== 系统提示词版本戳 =====================
+
+/**
+ * 系统提示词构建版本戳（G4 审计）。
+ * 每次变更本文件的系统消息装配逻辑（Soul / Memory / 技能上下文 / 引用会话等）时递增。
+ * 回合事件（turn.started）payload 携带本版本，用于追溯"该回合模型看到了哪版提示词"。
+ */
+export const SYSTEM_PROMPT_VERSION = 'chat.v1';
+
 // ===================== 文件夹上下文扫描 =====================
 
 // 支持文本读取的扩展名白名单（与 fileExtractor 保持一致）
@@ -536,6 +545,7 @@ export async function buildApiMessages(params: BuildApiMessagesParams): Promise<
   try {
     const compressResult = await compressContextWithSummary(
       sanitized, ctxWindow, ctxMaxTokens, 30, finalModelConfig,
+      undefined, undefined, undefined, { sessionId: params.sessionId },
     );
     truncated = { messages: compressResult.messages, truncated: compressResult.truncated || compressResult.compressed };
     if (compressResult.compressed) {

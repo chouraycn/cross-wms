@@ -232,18 +232,28 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
   // v1.7.85: 监听窗口全屏状态（全屏时红黄绿按钮消失，侧边栏按钮需要左移填补空间）
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const isFullscreenRef = useRef<boolean>(false);
   useEffect(() => {
     const onFullscreenChanged = ((e: CustomEvent) => {
-      setIsFullscreen(e.detail?.fullscreen ?? false);
+      const next = e.detail?.fullscreen ?? false;
+      if (isFullscreenRef.current !== next) {
+        isFullscreenRef.current = next;
+        setIsFullscreen(next);
+      }
     }) as EventListener;
     window.addEventListener('cdf-window-fullscreen-changed', onFullscreenChanged);
 
     // v1.7.85: 轮询检测全屏状态（每秒检查一次）
+    // 仅当状态实际变化时才 setState，避免每秒触发组件重渲染打断输入
     const checkFullscreen = () => {
       const fs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
-      setIsFullscreen(fs);
+      if (isFullscreenRef.current !== fs) {
+        isFullscreenRef.current = fs;
+        setIsFullscreen(fs);
+      }
     };
     const interval = setInterval(checkFullscreen, 1000);
+    checkFullscreen();
 
     return () => {
       window.removeEventListener('cdf-window-fullscreen-changed', onFullscreenChanged);
@@ -632,11 +642,23 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     }
   }, [searchParams, setSearchParams, isPage]);
 
+  // 仅在 isPage 首次挂载 300ms 后聚焦一次：
+  // - 若输入框内已有焦点（用户正在打字）或有文字则绝不抢焦点
+  // - 不再因 ChatSessionContext 流式重渲染重复触发
+  // - 使用 textarea[data-testid="chat-input"] 精准选择（项目里已不是 contenteditable 方案）
+  const chatPageMountFocusedRef = useRef(false);
   useEffect(() => {
     if (!isPage) return;
+    if (chatPageMountFocusedRef.current) return;
+    chatPageMountFocusedRef.current = true;
     const timer = setTimeout(() => {
-      const editable = document.querySelector('[contenteditable="true"]') as HTMLElement;
-      if (editable) editable.focus();
+      const editable = document.querySelector<HTMLTextAreaElement | HTMLInputElement>('textarea[data-testid="chat-input"], textarea, [contenteditable="true"]');
+      if (!editable) return;
+      if (document.activeElement && document.activeElement === editable) return;
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+      const v = (editable as HTMLTextAreaElement).value;
+      if (editable.textContent?.trim() || (typeof v === 'string' && v.trim())) return;
+      editable.focus();
     }, 300);
     return () => clearTimeout(timer);
   }, [isPage]);
@@ -1003,36 +1025,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                     <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted, textAlign: 'center', maxWidth: 400 }}>
                       See anytime, know anytime
                     </Typography>
-
-                    <Box sx={{ mt: 3, display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 500 }}>
-                      {AGENT_SCENARIOS.filter(a => !a.isDefault).slice(0, 4).map((agent) => (
-                        <Chip
-                          key={agent.id}
-                          label={agent.name}
-                          size="small"
-                          onClick={() => handleAgentChange(agent)}
-                          sx={{
-                            fontSize: '0.75rem',
-                            height: 28,
-                            borderRadius: '14px',
-                            cursor: 'pointer',
-                            bgcolor: currentAgent.id === agent.id
-                              ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)')
-                              : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'),
-                            borderColor: currentAgent.id === agent.id ? '#3b82f6' : gs.border,
-                            color: currentAgent.id === agent.id ? '#3b82f6' : gs.textSecondary,
-                            '&:hover': {
-                              bgcolor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(59, 130, 246, 0.15)',
-                            },
-                          }}
-                          variant="outlined"
-                        />
-                      ))}
-                    </Box>
                   </>
                 )}
-
-                {/* C-4 Hero 空态及推荐prompt卡片已删除 — 用户要求：空界面仅展示上方品牌/初始skill */}
               </Box>
             </Box>
           ) : (
@@ -1189,7 +1183,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             </Box>
           )}
 
-          <Box sx={{ px: 3, pb: 3, pt: 1.5, flexShrink: 0, borderTop: 'none' }}>
+          <Box sx={{ px: 3, pb: 3, pt: 0, flexShrink: 0, borderTop: 'none' }}>
             <Box sx={{
               maxWidth: currentMaxWidth,
               mx: 'auto',

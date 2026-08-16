@@ -10,6 +10,7 @@
  */
 
 import type { Observation } from './observer.js';
+import { getGuardConfig } from './guardConfig.js';
 
 // ===================== 类型定义 =====================
 
@@ -40,13 +41,18 @@ export interface EscalationStrategy {
 
 // ===================== 常量 =====================
 
-/** Jaccard 相似度阈值 */
+/**
+ * 护栏参数已配置化（guardConfig.ts）。
+ * 以下常量保留为文档化默认值，实际生效值见 getGuardConfig().loopDetector。
+ */
+
+/** Jaccard 相似度阈值（默认 0.8，配置源 guardConfig.loopDetector.similarityThreshold） */
 const SIMILARITY_THRESHOLD = 0.8;
 
-/** 连续相似轮数触发阈值 */
+/** 连续相似轮数触发阈值（默认 3，配置源 guardConfig.loopDetector.consecutiveThreshold） */
 const CONSECUTIVE_THRESHOLD = 3;
 
-/** 最大历史记录条数 */
+/** 最大历史记录条数（默认 20，配置源 guardConfig.loopDetector.maxHistorySize） */
 const MAX_HISTORY_SIZE = 20;
 
 // ===================== LoopDetector 类 =====================
@@ -57,19 +63,22 @@ const MAX_HISTORY_SIZE = 20;
  * 检测策略（混合策略）：
  * 1. Jaccard 粗筛：计算连续轮次结果文本的 Jaccard 相似度
  * 2. 错误类型匹配：提取错误分类后比较，匹配时相似度加权
- * 3. 连续 3 轮相似度 > 0.8 触发升级
+ * 3. 连续相似度超过阈值触发升级（阈值来自 guardConfig，可配置）
  */
 export class LoopDetector {
   private history: ObservationHistory[] = [];
   private threshold: number;
   private consecutiveThreshold: number;
+  private maxHistorySize: number;
   private consecutiveSimilarCount: number = 0;
   private lastSimilarity: number = 0;
   private escalationLevel: number = 0;
 
-  constructor(threshold?: number, consecutiveThreshold?: number) {
-    this.threshold = threshold ?? SIMILARITY_THRESHOLD;
-    this.consecutiveThreshold = consecutiveThreshold ?? CONSECUTIVE_THRESHOLD;
+  constructor(threshold?: number, consecutiveThreshold?: number, maxHistorySize?: number) {
+    const guard = getGuardConfig().loopDetector;
+    this.threshold = threshold ?? guard.similarityThreshold;
+    this.consecutiveThreshold = consecutiveThreshold ?? guard.consecutiveThreshold;
+    this.maxHistorySize = maxHistorySize ?? guard.maxHistorySize;
   }
 
   /**
@@ -112,7 +121,7 @@ export class LoopDetector {
     this.history.push(historyEntry);
 
     // 保持历史记录不超过上限
-    if (this.history.length > MAX_HISTORY_SIZE) {
+    if (this.history.length > this.maxHistorySize) {
       this.history.shift();
     }
 

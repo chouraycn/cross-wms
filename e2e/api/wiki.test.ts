@@ -14,7 +14,8 @@ describe('Wiki API E2E 测试', () => {
         .get('/api/wiki/stats');
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('stats');
+      expect(response.body.code).toBe(0);
+      expect(response.body.data).toHaveProperty('stats');
     });
   });
 
@@ -24,8 +25,9 @@ describe('Wiki API E2E 测试', () => {
         .get('/api/wiki/recent');
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('entries');
-      expect(Array.isArray(response.body.entries)).toBe(true);
+      expect(response.body.code).toBe(0);
+      expect(response.body.data).toHaveProperty('entries');
+      expect(Array.isArray(response.body.data.entries)).toBe(true);
     });
 
     it('应该支持 limit 参数', async () => {
@@ -33,7 +35,8 @@ describe('Wiki API E2E 测试', () => {
         .get('/api/wiki/recent?limit=5');
 
       expect(response.status).toBe(200);
-      expect(response.body.entries.length).toBeLessThanOrEqual(5);
+      expect(response.body.code).toBe(0);
+      expect(response.body.data.entries.length).toBeLessThanOrEqual(5);
     });
   });
 
@@ -55,7 +58,8 @@ describe('Wiki API E2E 测试', () => {
         .get('/api/wiki/tags');
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('tags');
+      expect(response.body.code).toBe(0);
+      expect(response.body.data).toHaveProperty('tags');
     });
   });
 });

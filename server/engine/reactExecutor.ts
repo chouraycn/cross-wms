@@ -40,6 +40,7 @@ import type { ToolExecutionResult } from './toolExecutor.js';
 import type { ExecutionStrategyOptions } from './execution-strategy-types.js';
 import type { SkillDefinition } from '../types/skill-runtime.js';
 import { BudgetManager, type BudgetConfig } from './budgetManager.js';
+import { getGuardConfig } from './guardConfig.js';
 import { LoopDetector } from './loopDetector.js';
 import { ObservationCompressor, needsCompression } from './observationCompressor.js';
 import { CircuitBreaker } from './circuitBreaker.js';
@@ -124,8 +125,10 @@ interface ReActState {
   earlyTermination: boolean;
 }
 
-/** 上下文压缩间隔（每 5 轮压缩一次） */
-const CONTEXT_COMPRESS_INTERVAL = 5;
+/**
+ * 上下文压缩间隔已配置化：guardConfig.contextCompressIntervalTurns（默认 5，每 N 轮压缩一次）。
+ * 原常量 CONTEXT_COMPRESS_INTERVAL = 5 已移除。
+ */
 
 /** v9.1 [五]: 计划导航 system 消息前缀（用于重规划时定位并更新） */
 const PLAN_NAV_PREFIX = '[执行计划导航]';
@@ -602,9 +605,10 @@ ${stepsText}`;
       // 追踪当前轮次（用于 autoCompressor）
       this.autoCompressor.trackTurn(currentMessages, estimatedTokens);
 
-      // v7.1-fix: 每轮检查 token 估算，接近阈值时立即截断（替代仅每 5 轮检查）
+      // v7.1-fix: 每轮检查 token 估算，接近阈值时立即截断（替代仅每 N 轮检查）
       // v9.2: 同时检查 autoCompressor 的 shouldCompress
-      const shouldCompress = (turn > 0 && turn % CONTEXT_COMPRESS_INTERVAL === 0) || this.autoCompressor.shouldCompress();
+      // 压缩间隔来自 guardConfig.contextCompressIntervalTurns（默认 5，可配置）
+      const shouldCompress = (turn > 0 && turn % getGuardConfig().contextCompressIntervalTurns === 0) || this.autoCompressor.shouldCompress();
       const shouldTruncate = estimatedTokens > tokenThreshold;
 
       if (shouldCompress || shouldTruncate) {
@@ -635,6 +639,10 @@ ${stepsText}`;
             ctxMaxTokens,
             tools.length,
             modelConfig,
+            undefined,
+            undefined,
+            undefined,
+            { sessionId },
           );
           if ((turnTruncated.compressed || turnTruncated.truncated)
             && currentMessages.length !== turnTruncated.messages.length) {

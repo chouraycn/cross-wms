@@ -22,7 +22,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { executeChat as streamExecuteChat } from './streamExecutor.js';
 import type { ExecuteChatCallbacks, ExecuteChatParams, ExecuteChatResult } from './streamExecutor.js';
-import { buildApiMessages, hasImageAttachment } from './buildApiMessages.js';
+import { buildApiMessages, hasImageAttachment, SYSTEM_PROMPT_VERSION } from './buildApiMessages.js';
 import { resolveSkillContext, extractContextTexts } from './skillRouter.js';
 import type { ModelCallConfig, MessageContent, ToolCall as AiToolCall } from '../aiClient.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
@@ -37,6 +37,7 @@ import { getSessionMessages, addMessage, getSessions, createSession, updateSessi
 import { extractAndAppendMemory } from '../routes/memoryExtractor.js';
 import { triggerTurnEndSync, triggerPostCompactionSync } from './sessionMemorySync.js';
 import { compressContextWithSummary } from './contextCompress.js';
+import { buildModelVisibleTokens } from './auditInvariant.js';
 import { estimateMessagesTokens, truncateContextForModel, type ApiMessage } from './contextTruncate.js';
 import contextWindowCache from './contextCache.js';
 import { getContextWindowGuard } from './contextWindowGuard.js';
@@ -462,11 +463,13 @@ export async function runChatSession(
   }
 
   // 记录用户消息创建事件
-  recordMessageCreated(sessionId, assistantMessageId, 'user', message, {
+  Promise.resolve(recordMessageCreated(sessionId, assistantMessageId, 'user', message, {
     model,
     attachments: input.attachments,
-  }).catch(() => {});
-  recordTurnStarted(sessionId, { userMessage: message, model, executionMode: input.executionMode }).catch(() => {});
+  })).catch(() => {});
+  // 修复：用归一化后的 executionMode（L434 已把 'agent'/'legacy'/undefined 映射为 AGENT/LEGACY/REACT），
+  // 此前误用原始 input.executionMode 导致账本里 turn.started 出现 mode=undefined。
+  recordTurnStarted(sessionId, { userMessage: message, model, executionMode, systemPromptVersion: SYSTEM_PROMPT_VERSION }).catch(() => {});
   runHooks(createHookEvent('message', 'received', sessionId, { role: 'user', content: message })).catch(() => {});
 
   // ===== 关键词自动触发检查 =====
@@ -631,6 +634,9 @@ export async function runChatSession(
       thinking: null,
       thinkingDuration: null,
     });
+    Promise.resolve(recordMessageCreated(sessionId, assistantMessageId, 'assistant', mockContent, {
+      model: effectiveModel,
+    })).catch(() => {});
     runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: mockContent })).catch(() => {});
     textStreamProcessor.forceFlush();
     callbacks.onEvent?.({ type: 'done', errorCode: null, errorMessage: null });
@@ -665,6 +671,10 @@ export async function runChatSession(
       thinking: cached.thinking,
       thinkingDuration: 0,
     });
+    Promise.resolve(recordMessageCreated(sessionId, assistantMessageId, 'assistant', cached.content, {
+      model: effectiveModel,
+      thinking: cached.thinking,
+    })).catch(() => {});
 
     runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: cached.content })).catch(() => {});
 
@@ -798,6 +808,10 @@ export async function runChatSession(
         ctxMaxTokens,
         contractMaxToolCalls,
         finalModelConfig,
+        undefined,
+        undefined,
+        undefined,
+        { sessionId },
       );
       if (
         (guardCompressed.compressed || guardCompressed.truncated) &&
@@ -845,6 +859,7 @@ export async function runChatSession(
       modelName: effectiveModelName,
       modelConfig: finalModelConfig,
       apiMessages: built.apiMessages,
+      auditTokens: buildModelVisibleTokens(dbMessages),
       executionMode,
       timerManager,
       signal: abortController.signal,
@@ -941,6 +956,7 @@ export async function runChatSession(
             undefined,
             undefined,
             undefined,
+            { sessionId },
           ),
         );
 
@@ -1076,6 +1092,12 @@ export async function runChatSession(
       thinkingDuration: result.thinkingDuration || null,
       generatedFiles: generatedFiles.length > 0 ? JSON.stringify(generatedFiles) : undefined,
     });
+    // 审计入账：assistant 消息记入事件账本（补齐"仅 user 入账"缺口，使 ledger 可完整重建会话）
+    Promise.resolve(recordMessageCreated(sessionId, assistantMessageId, 'assistant', result.content, {
+      model: effectiveModel,
+      toolCalls: result.toolCalls,
+      thinking: result.thinkingContent,
+    })).catch(() => {});
 
     runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: result.content })).catch(() => {});
 
@@ -1311,6 +1333,7 @@ async function tryFallback(
       modelName: fallbackModelName,
       modelConfig: fallbackModelConfig,
       apiMessages,
+      auditTokens: buildModelVisibleTokens(getSessionMessages(sessionId)),
       executionMode,
       timerManager,
       signal,
@@ -1380,6 +1403,12 @@ async function tryFallback(
       thinking: result.thinkingContent || null,
       thinkingDuration: result.thinkingDuration || null,
     });
+    // 审计入账：降级路径的 assistant 消息同样入账（messageId 用生成值，保证 ledger 可重建）
+    Promise.resolve(recordMessageCreated(sessionId, `fallback-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, 'assistant', result.content, {
+      model: fallbackModel.id,
+      toolCalls: result.toolCalls,
+      thinking: result.thinkingContent,
+    })).catch(() => {});
 
     runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: result.content })).catch(() => {});
 

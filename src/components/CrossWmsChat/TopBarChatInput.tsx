@@ -149,8 +149,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
 
-  // 输入框聚焦状态
-  const [isInputFocused, setIsInputFocused] = useState(false);
+  // 输入框聚焦状态 — 用 ref 保存，避免每次 onFocus/onBlur 触发整组件重渲染导致打断输入
+  const isInputFocusedRef = useRef(false);
 
   // 清空对话确认对话框
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -215,7 +215,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         const len = combined.length;
         editableRef.current.selectionStart = len;
         editableRef.current.selectionEnd = len;
-        editableRef.current.focus();
+        safeFocusEditable();
 
         handleInputChangeRef.current();
       }
@@ -306,6 +306,25 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   }, [selectedSkill?.id]);
 
   const handleSendRef = useRef<() => void>(() => {});
+
+  /**
+   * 安全聚焦到输入框：
+   * - 若输入框已经持有焦点 → 绝不调用 focus()（会打断中文输入法/正在输入的用户）
+   * - 若别处已有用户输入焦点（INPUT/TEXTAREA/contenteditable）→ 不抢焦点
+   * - 用户正在中文拼写（IME/composition）→ 不抢焦点
+   */
+  const safeFocusEditable = useCallback(() => {
+    const el = editableRef.current;
+    if (!el) return;
+    if (document.activeElement === el) return;
+    const ae = document.activeElement as HTMLElement | null;
+    if (ae) {
+      const tag = ae.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || ae.isContentEditable) return;
+    }
+    if (isComposingRef.current) return;
+    el.focus();
+  }, []);
 
   // 全局快捷键处理
   useEffect(() => {
@@ -638,6 +657,10 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
   const editableRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // inputValue 的 ref 镜像 — 用于 handleClickOutside 闭包，避免 [inputValue] 依赖导致
+  // 每次按键都重建 mousedown 监听器（WKWebView 中频繁 add/remove listener 可能干扰焦点）
+  const inputValueRef = useRef('');
+  useEffect(() => { inputValueRef.current = inputValue; }, [inputValue]);
   /**
    * IME 组合状态追踪 — 三重检测机制
    *
@@ -655,13 +678,14 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const isComposingRef = useRef(false);
 
   // Click outside to collapse input area
+  // 依赖空数组 — 使用 inputValueRef 读取最新值，避免每次按键重建监听器
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowSkills(false);
         setShowSkillSelector(false);
         setShowSessionReference(false);
-        if (!inputValue.trim()) {
+        if (!inputValueRef.current.trim()) {
           if (editableRef.current) {
             editableRef.current.value = '';
           }
@@ -676,7 +700,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [inputValue]);
+  }, []);
 
   // 预填聊天输入框：从其他页面（如库存页）注入查询文本
   // 两种触发方式：sessionStorage（跨页面导航）+ CHAT_PREFILL 事件（同页面）
@@ -688,7 +712,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         const len = text.length;
         editableRef.current.selectionStart = len;
         editableRef.current.selectionEnd = len;
-        editableRef.current.focus();
+        safeFocusEditable();
       }
       setInputValue(text);
     };
@@ -756,12 +780,17 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   }, []);
   handleInputChangeRef.current = () => handleInputChange();
 
-  const handleInputClick = () => {
+  const handleInputClick = (e: React.MouseEvent) => {
+    // 若点击落在 textarea / input / contenteditable 自身或其内部，不做任何事
+    // 使用 contains() 而非 tagName 检查 — WKWebView 中 e.target 可能不是预期元素
+    const target = e.target as HTMLElement;
+    if (editableRef.current && (editableRef.current === target || editableRef.current.contains(target))) return;
+    if (target.tagName === 'INPUT' || target.isContentEditable) return;
     // v2.3.1-fix: 点击输入框时清除 composition 残留标记，防止回车被误判
     compositionJustEndedRef.current = false;
-    // textarea 原生处理光标，只需聚焦
-    if (editableRef.current) {
-      editableRef.current.focus();
+    // 只有当目前焦点不在输入框时，才手动聚焦
+    if (document.activeElement !== editableRef.current) {
+      editableRef.current?.focus();
     }
   };
 
@@ -789,7 +818,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           const len = editableRef.current.value.length;
           editableRef.current.selectionStart = len;
           editableRef.current.selectionEnd = len;
-          editableRef.current.focus();
+          safeFocusEditable();
         }
       }, 0);
     }
@@ -825,7 +854,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           const len = editableRef.current.value.length;
           editableRef.current.selectionStart = len;
           editableRef.current.selectionEnd = len;
-          editableRef.current.focus();
+          safeFocusEditable();
         }
       }, 0);
     }
@@ -840,11 +869,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     });
     setShowSessionReference(false);
     // 聚焦到输入框
-    setTimeout(() => {
-      if (editableRef.current) {
-        editableRef.current.focus();
-      }
-    }, 0);
+    setTimeout(() => safeFocusEditable(), 0);
   };
 
   // ===================== v1.7.0: 意图分类 =====================
@@ -1140,11 +1165,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         sx={{
           width: '100%',
           borderRadius: variant === 'cardless' ? 0 : (isCardVariant ? '20px' : '16px'),
-          border: variant === 'cardless' || isCardVariant ? 'none' : `1px solid ${isInputFocused ? (isDark ? 'rgba(255, 255, 255, 0.5)' : '#000000') : gs.border}`,
+          border: variant === 'cardless' || isCardVariant ? 'none' : `1px solid ${gs.border}`,
           bgcolor: variant === 'cardless' ? 'transparent' : '#FFFFFF',
-          boxShadow: variant === 'cardless' ? 'none' : (isInputFocused
-            ? 'inset 0 2px 8px rgba(0,0,0,0.06), 0 0 0 3px rgba(0, 0, 0, 0.08)'
-            : 'inset 0 2px 6px rgba(0,0,0,0.04)'),
+          boxShadow: variant === 'cardless' ? 'none' : 'inset 0 2px 6px rgba(0,0,0,0.04)',
           display: 'flex',
           flexDirection: 'column',
           maxHeight: 'calc(70vh - 60px)',
@@ -1380,7 +1403,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   },
                   '&:hover .MuiChip-deleteIcon': { opacity: 1 },
                   flexShrink: 0,
-                  mt: inputExpanded ? '4px' : 0,
+                  mt: 0,
                   transition: 'all 0.15s ease',
                 }}
               />
@@ -1392,7 +1415,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 <Typography
                   sx={{
                     position: 'absolute',
-                    top: 3,
+                    top: 0,
                     left: 0,
                     right: 0,
                     bottom: 0,
@@ -1402,7 +1425,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                     color: gs.textMuted,
                     lineHeight: 1.5,
                     pointerEvents: 'none',
-                    pt: inputExpanded ? '3px' : 0,
+                    pt: 0,
                   }}
                 >
                   {t('今天帮你做些什么？')} <Box component="span" sx={{ color: gs.textDisabled, ml: 0.5 }}>{t('@ 引用对话文件，/ 调用技能与指令')}</Box>
@@ -1416,12 +1439,13 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 onKeyDown={handleKeyDown}
                 onKeyUp={updateCaretPos}
                 onClick={updateCaretPos}
+                onMouseDown={(e) => e.stopPropagation()}
                 onFocus={() => {
-                  setIsInputFocused(true);
+                  isInputFocusedRef.current = true;
                   updateCaretPos();
                 }}
                 onBlur={() => {
-                  setIsInputFocused(false);
+                  isInputFocusedRef.current = false;
                   const text = editableRef.current?.value || '';
                   window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
                     detail: { value: text },
@@ -1446,7 +1470,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   wordBreak: 'break-word',
                   whiteSpace: 'pre-wrap',
                   position: 'relative',
-                  paddingTop: inputExpanded ? '6px' : '3px',
+                  paddingTop: 0,
                   resize: 'none',
                   border: 'none',
                   backgroundColor: 'transparent',

@@ -11,6 +11,7 @@ import {
   getAppSettings as dbGet,
   setAppSettings as dbSet,
 } from '../dao/settings.js';
+import { applyGuardConfigToRuntime } from '../engine/guardConfig.js';
 import { ok, fail, notFound, BizCode } from './_shared/respond.js';
 
 const router = Router();
@@ -32,6 +33,8 @@ router.put('/:key', (req: Request, res: Response) => {
   try {
     const value = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
     dbSet(req.params.key, value);
+    // F：护栏参数热生效 — settings('default').aiEngine.guard 更新后立即推送运行时（不阻塞响应）
+    applyGuardConfigToRuntime().catch(() => undefined);
     return ok(res, { ok: true }, t('common.success'));
   } catch (e) {
     return fail(res, BizCode.BAD_REQUEST, (e as Error).message, 400);

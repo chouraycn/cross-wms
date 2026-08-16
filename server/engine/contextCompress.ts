@@ -12,6 +12,7 @@ import { estimateTokens, estimateMessagesTokens, sanitizeToolMessages, type ApiM
 import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig } from '../aiClient.js';
 import { logger } from '../logger.js';
+import { recordContextCompacted } from './eventRecorder.js';
 import {
   buildSummaryChunks,
   buildOversizedFallbackPlan,
@@ -355,6 +356,8 @@ export async function compressContextWithSummary(
   compressCallback?: CompressCallback,
   workingMemoryMessages?: Array<{ role: string; content: string }>,
   summarizationInstructions?: CompactionSummarizationInstructions,
+  /** 审计入账：压缩发生时把摘要写入事件账本（G3，软失败） */
+  audit?: { sessionId?: string; runId?: string },
 ): Promise<{ messages: ApiMessage[]; compressed: boolean; truncated: boolean }> {
   if (workingMemoryMessages && workingMemoryMessages.length > 0) {
     apiMessages = [...workingMemoryMessages as typeof apiMessages, ...apiMessages];
@@ -452,7 +455,34 @@ export async function compressContextWithSummary(
       logger.debug('[ContextCompress] 压缩后仍然超出限制，降级为简单截断');
       const { truncateContextForModel } = await import('./contextTruncate.js');
       const result = truncateContextForModel(sanitizedMessages, contextWindow, maxOutputTokens, toolsCount);
+      // 审计入账：摘要已生成但最终降级为截断（记录 truncated=true）
+      if (audit?.sessionId) {
+        Promise.resolve(recordContextCompacted(audit.sessionId, {
+          summary,
+          compressedMessageCount: toCompress.length,
+          retainedMessageCount: retained.length,
+          reason: forceTruncate ? 'message_count' : 'token_overflow',
+          tokensBefore: currentTokens,
+          tokensAfter: afterTokens,
+          truncated: true,
+          runId: audit.runId,
+        })).catch(() => undefined);
+      }
       return { ...result, compressed: true };
+    }
+
+    // 审计入账：压缩成功，摘要 + 覆盖范围写入事件账本
+    if (audit?.sessionId) {
+      Promise.resolve(recordContextCompacted(audit.sessionId, {
+        summary,
+        compressedMessageCount: toCompress.length,
+        retainedMessageCount: retained.length,
+        reason: forceTruncate ? 'message_count' : 'token_overflow',
+        tokensBefore: currentTokens,
+        tokensAfter: afterTokens,
+        truncated: false,
+        runId: audit.runId,
+      })).catch(() => undefined);
     }
 
     return { messages: sanitizedMessages, compressed: true, truncated: false };

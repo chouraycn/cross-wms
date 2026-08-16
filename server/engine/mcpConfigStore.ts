@@ -257,14 +257,20 @@ function initSchema(): void {
   db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_mcp_servers_global_name ON mcp_servers(name) WHERE tenant_id IS NULL`);
 }
 
-// 延迟执行建表
-setTimeout(() => {
+// 延迟执行建表，但保证同步调用者可用（E2E 测试在同 tick 插入行时 schema 尚未就绪 → UNIQUE(name) 旧遗留）
+let schemaInitialized = false;
+function ensureSchemaReady(): void {
+  if (schemaInitialized) return;
   try {
     initSchema();
   } catch (err) {
     logger.error('[MCPStore] 初始化 schema 失败:', err);
+  } finally {
+    schemaInitialized = true;
   }
-}, 0);
+}
+setTimeout(() => { ensureSchemaReady(); }, 0);
+export { ensureSchemaReady };
 
 // ===================== 序列化/反序列化 =====================
 
@@ -606,6 +612,7 @@ interface CreateMcpServerData {
 
 /** 创建 MCP 服务器（数字员工租户） */
 export function createMcpServer(data: CreateMcpServerData): McpServerRow {
+  ensureSchemaReady();
   const db = getDb();
   const id = uuidv4();
   const tenantId = data.tenant_id || DEFAULT_TENANT_ID;

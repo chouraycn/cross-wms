@@ -23,7 +23,7 @@
 // 必须首先导入，确保 server/db-core 加载前 CDF_DATA_DIR 已指向临时目录
 import './utils/staff-e2e-env.js';
 
-import { describe, it, expect, afterAll, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterAll, afterEach, vi, beforeAll } from 'vitest';
 import fs from 'fs';
 import { McpClientManager } from '../../server/engine/mcpClientManager.js';
 import { sanitizeServerName, makeMcpToolName } from '../../server/engine/mcpTypes.js';
@@ -54,8 +54,19 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+beforeAll(() => {
+  // 手动触发 mcp_servers schema 就绪：生产代码使用 setTimeout(_,0) 延迟建表，
+  // 但 E2E 测试同 tick 就同步插入行，可能命中"未迁移旧表"导致 UNIQUE(name) 冲突。
+  try {
+    (mcpServerDao as any).ensureSchemaReady?.();
+  } catch {
+    /* best-effort */
+  }
+});
+
 describe('数字员工隔离 MCP 整合（request #1）', () => {
   const tenant = uniqueTenant();
+  const tag = tenant.replace(/[^a-z0-9]/gi, '').slice(0, 8);
 
   it('无 enabled server 时返回 null（不污染全局单例）', async () => {
     // 该 tenant 下没有插入任何 sd_mcp_servers 行
@@ -67,7 +78,7 @@ describe('数字员工隔离 MCP 整合（request #1）', () => {
     // 1. 种入一个 enabled 的 MCP server 配置
     const row = mcpServerDao.createMcpServer({
       tenant_id: tenant,
-      name: 'acme-fs',
+      name: `acme-fs-${tag}`,
       transport: 'streamable_http',
       url: 'http://localhost:9999/mcp',
       enabled: true,
@@ -108,12 +119,13 @@ describe('数字员工隔离 MCP 整合（request #1）', () => {
     // 4. 工具名带有员工隔离前缀
     const tools = mgr!.getMcpTools();
     expect(tools.length).toBe(1);
-    const expectedName = makeMcpToolName('acme-fs', 'ping');
+    const serverName = `acme-fs-${tag}`;
+    const expectedName = makeMcpToolName(serverName, 'ping');
     expect(tools[0].function.name).toBe(expectedName);
     expect(expectedName.startsWith('mcp__')).toBe(true);
 
     // 5. 前缀归属判定：该前缀属于本 manager（分发时优先走隔离 manager）
-    expect(mgr!.hasServerPrefix(sanitizeServerName('acme-fs'))).toBe(true);
+    expect(mgr!.hasServerPrefix(sanitizeServerName(serverName))).toBe(true);
     expect(mgr!.hasServerPrefix('some_other_server')).toBe(false);
 
     // 6. executeMcpTool 走本 manager 的隔离 client（证明「整合进软件执行链路」）
@@ -230,16 +242,17 @@ describe('执行链路状态端点 /execution-runtime（前端状态提示单一
   });
 
   it('enabled MCP server → connected=true；disabled → connected=false', () => {
+    const tag = tenant.replace(/[^a-z0-9]/gi, '').slice(0, 8);
     const enabledRow = mcpServerDao.createMcpServer({
       tenant_id: tenant,
-      name: 'acme-fs',
+      name: `acme-fs-${tag}`,
       transport: 'streamable_http',
       url: 'http://localhost:9999/mcp',
       enabled: true,
     });
     const disabledRow = mcpServerDao.createMcpServer({
       tenant_id: tenant,
-      name: 'beta-fs',
+      name: `beta-fs-${tag}`,
       transport: 'sse',
       url: 'http://localhost:9998/mcp',
       enabled: false,

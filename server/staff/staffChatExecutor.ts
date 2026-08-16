@@ -15,6 +15,7 @@
  * 事件：通过 callbacks.onEvent 透传 StaffStreamEvent（type/data）给上游 SSE 写出。
  */
 import { executeChat } from '../engine/streamExecutor.js';
+import { buildModelVisibleTokens } from '../engine/auditInvariant.js';
 import { ExecutionMode } from '../engine/executionStrategy.js';
 import { getBuiltinToolDefinitions } from '../engine/toolRegistry.js';
 import { getSkillToolDefinitions } from '../engine/skillToolBridge.js';
@@ -521,6 +522,8 @@ export async function runStaffChatTurn(
       modelName: effectiveModelName,
       modelConfig: finalModelConfig as ModelConfig & { apiKey: string },
       apiMessages: apiMessages as Array<{ role: string; content: string; tool_calls?: never; tool_call_id?: string }>,
+      // 审计不变量：history 来自 chatDao.listMessages（DB），当前 message 由豁免逻辑覆盖
+      auditTokens: buildModelVisibleTokens(history as unknown as Array<{ role?: string; content?: unknown; toolCalls?: string | null }>),
       executionMode: input.executionMode ?? ExecutionMode.REACT,
       timerManager,
       signal: abortController.signal,

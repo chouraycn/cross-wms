@@ -209,6 +209,7 @@ import { TimerManager } from './core/timerManager.js';
 
 // v9.0: Event Ledger (事件溯源)
 import { initEventLedger, getEventLedger } from './engine/eventLedger.js';
+import { applyGuardConfigToRuntime } from './engine/guardConfig.js';
 
 const app = express();
 // CORS: 开发环境允许所有本地来源
@@ -682,6 +683,8 @@ app.use('/api/staffdeck/traces', lazyRouter(() => import('./routes/staff/traces.
 app.use('/api/staffdeck/ui-config', lazyRouter(() => import('./routes/staff/uiConfig.js'), undefined, 'staff-ui-config'));
 app.use('/api/staffdeck/persona', lazyRouter(() => import('./routes/staff/persona.js'), undefined, 'staff-persona'));
 app.use('/api/staffdeck/sessions', lazyRouter(() => import('./routes/staff/sessions.js'), undefined, 'staff-sessions'));
+app.use('/api/staffdeck/goals', lazyRouter(() => import('./routes/staff/goals.js'), undefined, 'staff-goals'));
+app.use('/api/staffdeck/delegations', lazyRouter(() => import('./routes/staff/delegations.js'), undefined, 'staff-delegations'));
 app.use('/api/staffdeck/mock', lazyRouter(() => import('./routes/staff/mock.js'), undefined, 'staff-mock'));
 // H5: 路由命中率监控 API（全局/租户/员工命中率 + 冷启动 fallback 原因）
 app.use('/api/staffdeck/route-metrics', lazyRouter(() => import('./routes/staff/routeMetrics.js'), undefined, 'staff-route-metrics'));
@@ -990,6 +993,13 @@ server.listen(PORT, () => {
           }
           logger.info(`[EventLedger] 崩溃恢复完成`);
         }
+
+        // F：护栏参数配置化 — 启动时从 settings 加载（aiEngine.guard），并推送到 defaultCircuitBreaker
+        applyGuardConfigToRuntime()
+          .then(() => logger.info('[GuardConfig] 启动时护栏配置已加载'))
+          .catch((err: unknown) =>
+            logger.warn('[GuardConfig] 启动时加载护栏配置失败:', err instanceof Error ? err.message : String(err)),
+          );
       })
       .catch(err => {
         logger.warn('[EventLedger] 初始化失败，继续运行中:', err instanceof Error ? err.message : String(err));

@@ -191,7 +191,8 @@ describe('C6 capabilities 路由 (/api/capabilities)', () => {
   it('GET /thinking-modes 应返回思考级别', async () => {
     const res = await request(app).get('/thinking-modes');
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('options');
+    expect(res.body.code).toBe(0);
+    expect(res.body.data).toHaveProperty('options');
   });
 
   it('GET /tool-search 应返回目录统计', async () => {
@@ -202,7 +203,8 @@ describe('C6 capabilities 路由 (/api/capabilities)', () => {
   it('GET /infra/retry 应返回退避计算', async () => {
     const res = await request(app).get('/infra/retry');
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('backoff');
+    expect(res.body.code).toBe(0);
+    expect(res.body.data).toHaveProperty('backoff');
   });
 });
 

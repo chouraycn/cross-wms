@@ -365,6 +365,9 @@ function loadLocalStorageFallback(): boolean {
  *  若用户有 localStorage 遗留迁移数据则继续使用，避免"请求失败"误报打扰首次启动。
  */
 export async function initFromApi(): Promise<void> {
+  // 先加载内置技能目录（本地懒加载，不依赖后端），确保 getAllSkills() 能返回内置技能
+  await loadBuiltinSkills().catch(() => {});
+
   const maxRetries = 3;
   let lastError: unknown = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {

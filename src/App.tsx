@@ -382,12 +382,16 @@ function safeLazy<T = any>(
   const Wrapped: React.FC<T> = (props) => {
     const [attempt, setAttempt] = useState(0);
     const [fail, setFail] = useState<Error | null>(null);
+    // 用 ref 缓存 LazyComp，保证跨渲染引用稳定 —— 否则每次重渲染 React.lazy() 都返回新类型，
+    // React 视为组件类型变化 → 卸载重挂载 → Suspense fallback → 整页"一直刷新"
+    const lazyCompRef = useRef<React.LazyExoticComponent<React.ComponentType<T>> | null>(null);
 
-    const LazyComp = useMemo(() => {
-      return React.lazy(() =>
+    // 首次渲染 + attempt 每次变化时重建 lazy（只有这两种情况才重新 import）
+    if (lazyCompRef.current === null || attempt !== (lazyCompRef as any)._lastAttempt) {
+      lazyCompRef.current = React.lazy(() =>
         factory()
           .then((m) => {
-            setFail(null);
+            setFail((cur) => (cur ? null : cur));
             return m;
           })
           .catch((err: unknown) => {
@@ -396,7 +400,10 @@ function safeLazy<T = any>(
             return { default: (() => null) as React.ComponentType<T> };
           }),
       );
-    }, [attempt]);
+      (lazyCompRef as any)._lastAttempt = attempt;
+    }
+
+    const LazyComp = lazyCompRef.current;
 
     if (fail) {
       return (

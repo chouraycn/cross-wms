@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { t } from '../i18n/translate.js';
+import { getAuditViolationCount } from '../engine/auditInvariant.js';
 
 const router = Router();
 
@@ -25,7 +26,12 @@ router.get('/', (_req, res) => {
     });
     return;
   }
-  res.json({ status: 'ok', time: new Date().toISOString(), message: t('server.ready') });
+  res.json({
+    status: 'ok',
+    time: new Date().toISOString(),
+    message: t('server.ready'),
+    auditViolations: getAuditViolationCount(),
+  });
 });
 
 export default router;

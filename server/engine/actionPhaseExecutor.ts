@@ -29,6 +29,7 @@ import { toolFallbackManager } from './toolFallbackStrategy.js';
 import { createToolCall, completeToolCall } from '../dao/taskMonitorDao.js';
 import { isSkillToolName, handleSkillToolCall, extractSkillId } from './skillToolBridge.js';
 import { isHttpToolName, executeHttpToolFromCall } from '../staff/staffHttpToolBridge.js';
+import { recordToolCallStarted, recordToolCallCompleted, recordToolCallFailed } from './eventRecorder.js';
 
 /**
  * ActionPhase 执行器 — 封装 ACTING 阶段的全部逻辑。
@@ -198,6 +199,15 @@ export class ActionPhaseExecutor {
   ): Promise<string> {
     const toolName = toolCall.function.name;
 
+    // 审计入账：step 级工具调用开始（eventRecorder 内部 try/catch，await 保证 started 先于 completed/failed 落序）
+    const auditSessionId = context.sessionId;
+    if (auditSessionId) {
+      await recordToolCallStarted(auditSessionId, toolName, toolCall.function.arguments, {
+        toolCallId: toolCall.id,
+        messageId: context.messageId,
+      });
+    }
+
     // v11.1: 检查 run 级别是否已取消
     if (managedSignal?.aborted) {
       const abortResult = JSON.stringify({
@@ -211,6 +221,9 @@ export class ActionPhaseExecutor {
       });
       if (context.onToolCall) {
         context.onToolCall(toolCall, abortResult);
+      }
+      if (auditSessionId) {
+        Promise.resolve(recordToolCallFailed(auditSessionId, toolName, abortResult, { toolCallId: toolCall.id })).catch(() => undefined);
       }
       return abortResult;
     }
@@ -228,6 +241,9 @@ export class ActionPhaseExecutor {
       });
       if (context.onToolCall) {
         context.onToolCall(toolCall, skipResult);
+      }
+      if (auditSessionId) {
+        Promise.resolve(recordToolCallFailed(auditSessionId, toolName, skipResult, { toolCallId: toolCall.id })).catch(() => undefined);
       }
       return skipResult;
     }
@@ -247,6 +263,9 @@ export class ActionPhaseExecutor {
         });
         if (context.onToolCall) {
           context.onToolCall(toolCall, skipResult);
+        }
+        if (auditSessionId) {
+          Promise.resolve(recordToolCallFailed(auditSessionId, toolName, skipResult, { toolCallId: toolCall.id })).catch(() => undefined);
         }
         return skipResult;
       }
@@ -451,6 +470,20 @@ export class ActionPhaseExecutor {
     // 通知调用方
     if (context.onToolCall) {
       context.onToolCall(toolCall, result);
+    }
+
+    // 审计入账：step 级工具调用结束（成功 / 失败），携带耗时与错误分类
+    if (auditSessionId) {
+      if (middlewareResult.errorType === 'none') {
+        await recordToolCallCompleted(auditSessionId, effectiveToolName, result, {
+          toolCallId: toolCall.id,
+          duration: Date.now() - execStartTime,
+        });
+      } else {
+        await recordToolCallFailed(auditSessionId, effectiveToolName, middlewareResult.errorMessage || 'Tool execution failed', {
+          toolCallId: toolCall.id,
+        });
+      }
     }
 
     return result;

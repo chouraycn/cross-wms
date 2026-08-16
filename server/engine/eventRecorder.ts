@@ -108,6 +108,10 @@ export async function recordTurnStarted(
     userMessage?: string;
     model?: string;
     executionMode?: string;
+    /** 系统提示词构建版本戳（bump 于 buildApiMessages.SYSTEM_PROMPT_VERSION） */
+    systemPromptVersion?: string;
+    /** 该回合模型可见的工具 schema 数量 */
+    toolSchemaCount?: number;
     runId?: string;
   }
 ): Promise<LedgerEvent | null> {
@@ -117,6 +121,8 @@ export async function recordTurnStarted(
       userMessage: options?.userMessage?.slice(0, 500),
       model: options?.model,
       executionMode: options?.executionMode,
+      systemPromptVersion: options?.systemPromptVersion,
+      toolSchemaCount: options?.toolSchemaCount,
     }, { runId: options?.runId });
   } catch (err) {
     logger.warn('[EventRecorder] 记录 turn.started 失败:', err);
@@ -244,6 +250,122 @@ export async function recordToolCallFailed(
     }, { runId: options?.runId });
   } catch (err) {
     logger.warn('[EventRecorder] 记录 tool.call.failed 失败:', err);
+    return null;
+  }
+}
+
+// ==================== 渠道投递事件（P1a：渠道审计可按 step 关联） ====================
+
+/**
+ * 记录一次 IM 渠道投递（企业微信/公众号/飞书）。
+ * 与 sd_channel_deliveries 投递日志互补：账本事件可按会话 step 关联回放，
+ * 回答"这个回合的答复有没有推出去、渠道侧状态是什么"。
+ */
+export async function recordChannelDelivered(
+  sessionId: string,
+  options?: {
+    deliveryId?: string;
+    channel?: string;
+    tenantId?: string;
+    agentId?: string;
+    status?: string;
+    externalId?: string;
+    error?: string;
+    runId?: string;
+  }
+): Promise<LedgerEvent | null> {
+  try {
+    ensureLedger();
+    return await getEventLedger().recordEvent(sessionId, 'channel.delivered', {
+      deliveryId: options?.deliveryId,
+      channel: options?.channel,
+      tenantId: options?.tenantId,
+      agentId: options?.agentId,
+      status: options?.status,
+      externalId: options?.externalId,
+      error: options?.error,
+    }, { runId: options?.runId });
+  } catch (err) {
+    logger.warn('[EventRecorder] 记录 channel.delivered 失败:', err);
+    return null;
+  }
+}
+
+// ==================== 员工派活事件（P2b：派活有归属、可审计） ====================
+
+/**
+ * 记录一次员工派活变更（创建/完成/失败/阻塞）。
+ * 关联到父会话账本，与 step 时间线同源可回放。
+ */
+export async function recordDelegationChanged(
+  sessionId: string,
+  options?: {
+    delegationId?: string;
+    tenantId?: string;
+    parentAgentId?: string;
+    childAgentId?: string;
+    depth?: number;
+    status?: string;
+    error?: string;
+    runId?: string;
+  }
+): Promise<LedgerEvent | null> {
+  try {
+    ensureLedger();
+    return await getEventLedger().recordEvent(sessionId, 'delegation.change', {
+      delegationId: options?.delegationId,
+      tenantId: options?.tenantId,
+      parentAgentId: options?.parentAgentId,
+      childAgentId: options?.childAgentId,
+      depth: options?.depth,
+      status: options?.status,
+      error: options?.error,
+    }, { runId: options?.runId });
+  } catch (err) {
+    logger.warn('[EventRecorder] 记录 delegation.change 失败:', err);
+    return null;
+  }
+}
+
+// ==================== 上下文压缩事件 ====================
+
+/**
+ * 记录一次上下文压缩（LLM 摘要落库）。
+ * 目的：压缩之后"模型实际看到的历史"由哪些原始消息 + 哪份摘要构成可还原（G3）。
+ */
+export async function recordContextCompacted(
+  sessionId: string,
+  options?: {
+    /** LLM 生成的摘要全文 */
+    summary?: string;
+    /** 被压缩（丢弃）的原始消息条数 */
+    compressedMessageCount?: number;
+    /** 压缩后保留的消息条数 */
+    retainedMessageCount?: number;
+    /** 触发原因：token_overflow | message_count */
+    reason?: string;
+    /** 压缩前估算 token */
+    tokensBefore?: number;
+    /** 压缩后估算 token */
+    tokensAfter?: number;
+    /** 压缩后是否又降级为简单截断 */
+    truncated?: boolean;
+    runId?: string;
+  }
+): Promise<LedgerEvent | null> {
+  try {
+    ensureLedger();
+    return await getEventLedger().recordEvent(sessionId, 'context.compacted', {
+      summary: options?.summary?.slice(0, 20000),
+      compressedMessageCount: options?.compressedMessageCount,
+      retainedMessageCount: options?.retainedMessageCount,
+      reason: options?.reason,
+      tokensBefore: options?.tokensBefore,
+      tokensAfter: options?.tokensAfter,
+      truncated: options?.truncated,
+    }, { runId: options?.runId });
+  } catch (err) {
+    logger.warn('[EventRecorder] 记录 context.compacted 失败:', err);
     return null;
   }
 }

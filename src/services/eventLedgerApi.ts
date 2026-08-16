@@ -57,6 +57,56 @@ export interface LedgerStats {
   dbSizeHuman: string;
 }
 
+// ==================== Step 时间线类型（P1a） ====================
+
+export interface StepTimelineStep {
+  stepIndex: number;
+  toolName: string;
+  callId?: string;
+  args?: string;
+  result?: string;
+  error?: string;
+  durationMs?: number;
+  status: 'started' | 'success' | 'failed' | 'skipped';
+  startedAt?: number;
+  completedAt?: number;
+}
+
+export interface StepTimelineDelivery {
+  deliveryId?: string;
+  channel?: string;
+  status?: string;
+  externalId?: string;
+  error?: string;
+  timestamp: number;
+}
+
+export interface StepTimelineCompaction {
+  summary?: string;
+  reason?: string;
+  tokensBefore?: number;
+  tokensAfter?: number;
+}
+
+export interface StepTimelineTurn {
+  turnIndex: number;
+  status: 'active' | 'completed' | 'failed';
+  startedAt?: number;
+  endedAt?: number;
+  model?: string;
+  executionMode?: string;
+  systemPromptVersion?: string;
+  toolSchemaCount?: number;
+  userMessage?: string;
+  assistantContent?: string;
+  thinkingDuration?: number;
+  usage?: { totalTokens?: number };
+  steps: StepTimelineStep[];
+  deliveries: StepTimelineDelivery[];
+  compactions: StepTimelineCompaction[];
+  runId?: string;
+}
+
 // ==================== API 函数 ====================
 
 export const eventLedgerApi = {
@@ -90,6 +140,16 @@ export const eventLedgerApi = {
     try {
       const data = await request<ReconstructedSession>('GET', `/api/event-ledger/sessions/${sessionId}/reconstruct`);
       return { ok: true, data };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  },
+
+  /** P1a：会话 step 时间线（回合 → step → 工具调用 → 渠道投递 → 压缩） */
+  async getTimeline(sessionId: string): Promise<{ ok: boolean; data?: StepTimelineTurn[]; count?: number; error?: string }> {
+    try {
+      const data = await request<StepTimelineTurn[]>('GET', `/api/event-ledger/sessions/${sessionId}/timeline`);
+      return { ok: true, data, count: data.length };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }

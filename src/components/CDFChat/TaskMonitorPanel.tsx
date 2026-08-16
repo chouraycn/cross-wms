@@ -1086,14 +1086,13 @@ export const TaskMonitorPanel: React.FC<TaskMonitorPanelProps> = ({
 
   return (
     <Box sx={{ 
-      width: 320, 
       flexShrink: 0, 
       height: '100%', 
+      width: '100%',
       display: 'flex', 
       flexDirection: 'column', 
       overflow: 'hidden',
       bgcolor: '#f5f5f5',
-      borderLeft: '1px solid #e0e0e0',
     }}>
       <Box sx={{
         px: 2,

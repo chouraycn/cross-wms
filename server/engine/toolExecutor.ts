@@ -272,7 +272,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     const ctxWindow = modelConfig.contextWindow || 128000;
     // v1.5.131: 截断用 maxTokens 上限 8192，避免 384K 浪费输入空间
     const ctxMaxTokens = Math.min(modelConfig.maxTokens || 8192, 8192);
-    const turnTruncated = await compressContextWithSummary(currentMessages, ctxWindow, ctxMaxTokens, processedTools.length, modelConfig);
+    const turnTruncated = await compressContextWithSummary(currentMessages, ctxWindow, ctxMaxTokens, processedTools.length, modelConfig, undefined, undefined, undefined, { sessionId });
     if ((turnTruncated.compressed || turnTruncated.truncated) && currentMessages.length !== turnTruncated.messages.length) {
       // 替换 currentMessages 内容（保持引用不变）
       currentMessages.length = 0;

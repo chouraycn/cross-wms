@@ -18,6 +18,7 @@
 
 import { estimateTokens } from './contextTruncate.js';
 import { logger } from '../logger.js';
+import { getGuardConfig } from './guardConfig.js';
 
 // ===================== 类型定义 =====================
 
@@ -52,21 +53,19 @@ export interface BudgetRemaining {
   remainingTokens: number;
 }
 
-/** 默认预算配置 */
+/** 默认预算配置（历史硬编码值，guardConfig 注册表未覆盖时兜底） */
 export const DEFAULT_BUDGET_CONFIG: BudgetConfig = {
   maxTurns: 25,
   maxTokens: 100000,
   windowSize: 5,
 };
 
-// ===================== v6.0: P1-3 自适应预算映射 =====================
+// ===================== v6.0: P1-3 自适应预算映射（配置化） =====================
 
-/** v6.0: P1-3 复杂度等级对应的 maxTurns 映射 */
-const ADAPTIVE_MAX_TURNS: Record<string, number> = {
-  simple: 8,
-  moderate: 20,
-  complex: 40,
-};
+/** v6.0: P1-3 复杂度等级对应的 maxTurns 映射，来源：guardConfig.budget.adaptiveMaxTurns */
+function getAdaptiveMaxTurns(): Record<string, number> {
+  return getGuardConfig().budget.adaptiveMaxTurns;
+}
 
 // ===================== BudgetManager 类 =====================
 
@@ -89,7 +88,7 @@ export class BudgetManager {
   private explicitMaxTurns: boolean;
 
   constructor(config?: Partial<BudgetConfig>) {
-    const merged = { ...DEFAULT_BUDGET_CONFIG, ...config };
+    const merged = { ...getGuardConfig().budget, ...config };
     this.maxTurns = merged.maxTurns;
     this.maxTokens = merged.maxTokens;
     this.explicitMaxTurns = config?.maxTurns !== undefined;
@@ -199,7 +198,7 @@ export class BudgetManager {
   setAdaptiveMaxTurns(level: string, onSSEEvent?: (event: Record<string, any>) => void): void {
     if (this.explicitMaxTurns) return; // 显式传入时不覆盖
 
-    const newMaxTurns = ADAPTIVE_MAX_TURNS[level];
+    const newMaxTurns = getAdaptiveMaxTurns()[level];
     if (newMaxTurns && newMaxTurns !== this.maxTurns) {
       const oldMaxTurns = this.maxTurns;
       const oldMaxTokens = this.maxTokens;

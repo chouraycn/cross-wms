@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { Box } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import LoadingFallback from '../../components/Common/LoadingFallback';
@@ -47,8 +47,12 @@ export default function StaffDeckPortal() {
     return false;
   });
 
-  // 预加载标志：组件挂载后空闲时预加载 iframe，避免首屏争抢资源
+  // 预加载标志：
+  // - active=true 时 立即 置为 true（确保进入员工栏目立即渲染 iframe，避免 idle 延迟导致白屏）
+  // - active=false 时 仍使用 requestIdleCallback 后台预热（不影响首屏）
   const [iframePreloaded, setIframePreloaded] = useState(false);
+  const iframePreloadedRef = useRef(false);
+  useEffect(() => { iframePreloadedRef.current = iframePreloaded; }, [iframePreloaded]);
 
   useEffect(() => {
     const onSidebarState = (e: Event) => {
@@ -58,45 +62,79 @@ export default function StaffDeckPortal() {
     return () => window.removeEventListener('cdf-sidebar-state', onSidebarState);
   }, []);
 
-  // 空闲时预加载 iframe 组件 chunk + 实际挂载 iframe
+  // 进入员工栏目立即预加载；未进入则在空闲时预热
+  // 依赖只有 [active] — 防止 iframePreloaded 变化触发 effect 重新调度/取消导致的闪烁
   useEffect(() => {
-    if (iframePreloaded) return;
-    const schedule = () => setIframePreloaded(true);
+    // 用户已切换到 /staffdeck 或 /warehouse-staff —— 必须立即显示
+    if (active) {
+      if (!iframePreloadedRef.current) {
+        iframePreloadedRef.current = true;
+        setIframePreloaded(true);
+      }
+      return;
+    }
+    // 非活跃页面时，如果已经预热就什么都不做
+    if (iframePreloadedRef.current) return;
+    // 否则使用 requestIdleCallback 懒预热（只排一次）
+    let cancelled = false;
+    const schedule = () => {
+      if (cancelled) return;
+      iframePreloadedRef.current = true;
+      setIframePreloaded(true);
+    };
     const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
     if (typeof ric === 'function') {
       const id = ric(schedule, { timeout: 2000 });
       return () => {
+        cancelled = true;
         const cic = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
         if (typeof cic === 'function') cic(id);
       };
     } else {
       const t = setTimeout(schedule, 1500);
-      return () => clearTimeout(t);
+      return () => { cancelled = true; clearTimeout(t); };
     }
-  }, [iframePreloaded]);
+  }, [active]);
 
-  const leftOffset = sidebarCollapsed ? 0 : SIDEBAR_WIDTH_EXPANDED;
+  // 对齐外层 main 容器：margin: 9px、border-radius: 12px、height: calc(100vh - 18px)
+  // 侧边栏未收起时，左侧还要额外留出 260px sidebar + 9px 左边距 = 269px
+  const left = sidebarCollapsed ? '9px' : `${9 + SIDEBAR_WIDTH_EXPANDED}px`;
 
   return (
     <Box
       sx={{
         position: 'fixed',
-        top: 0,
-        left: leftOffset,
-        right: 0,
-        bottom: 0,
+        top: '9px',
+        left,
+        right: '9px',
+        bottom: '9px',
         zIndex: active ? 1400 : -1,
         // 预加载完成前不渲染 iframe，避免拖慢首屏
         display: active && iframePreloaded ? 'block' : 'none',
+        // 员工页面专属：外层暖米色背景 + 内层白色圆角卡片区域（与其他页面视觉风格一致）
         bgcolor: '#f7f5ef',
+        borderRadius: '12px',
         overflow: 'hidden',
+        border: '1px solid #eeeeee',
+        p: 2,
       }}
     >
-      {iframePreloaded && (
-        <Suspense fallback={null}>
-          <StaffDeckEmbedPage warehouseMode={warehouseMode} sidebarCollapsed={sidebarCollapsed} />
-        </Suspense>
-      )}
+      {/* 内层白色圆角面板 —— 作为 iframe 的画布（让iframe看起来嵌在一张白色卡片里） */}
+      <Box sx={{
+        width: '100%',
+        height: '100%',
+        borderRadius: '14px',
+        bgcolor: '#FFFFFF',
+        border: '1px solid var(--surface-muted, #E5E7EB)',
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
+        {iframePreloaded && (
+          <Suspense fallback={<LoadingFallback />}>
+            <StaffDeckEmbedPage warehouseMode={warehouseMode} sidebarCollapsed={sidebarCollapsed} />
+          </Suspense>
+        )}
+      </Box>
     </Box>
   );
 }

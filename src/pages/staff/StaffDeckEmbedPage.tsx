@@ -121,13 +121,15 @@ export default function StaffDeckEmbedPage({ warehouseMode = false, sidebarColla
     <Box
       sx={{
         position: 'absolute',
-        top: topOffset,
+        // 外层 StaffDeckPortal 已经处理了侧边栏/主容器 margin 9px 的对齐，
+        // 内部只需关心收起时 GlobalActionsBar 的顶部避让
+        top: sidebarCollapsed ? topOffset : 0,
         left: 0,
         right: 0,
         bottom: 0,
         width: 'auto',
         height: 'auto',
-        bgcolor: '#f7f5ef',
+        bgcolor: '#FFFFFF',
         overflow: 'hidden',
       }}
     >

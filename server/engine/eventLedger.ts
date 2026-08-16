@@ -55,6 +55,10 @@ export type EventType =
   | 'tool.call.failed'
   | 'model.stream.start'
   | 'model.stream.end'
+  | 'context.compacted'
+  | 'goal.change'
+  | 'channel.delivered'
+  | 'delegation.change'
   | 'memory.added'
   | 'memory.deleted'
   | 'system.error'
@@ -151,6 +155,10 @@ export class EventLedger {
   private createSchema(): void {
     const db = this.getDb();
 
+    // ⚠️ 契约（2026-08-16 回放演示发现）：ledger_sessions 与 ledger_events 有
+    // ON DELETE CASCADE。写入会话行时**禁止 INSERT OR REPLACE / DELETE + INSERT**——
+    // REPLACE 会先删旧行，级联清空该会话全部历史事件。只允许：
+    //   首次 → INSERT；后续 → UPDATE（见 recordEvent）。
     db.exec(`
       CREATE TABLE IF NOT EXISTS ledger_sessions (
         session_id       TEXT PRIMARY KEY,
@@ -526,7 +534,7 @@ export class EventLedger {
               content: String(p.content || ''),
               timestamp: event.timestamp,
               toolCalls: p.toolCalls ? (p.toolCalls as any[]) : undefined,
-              thinking: p.thinning ? String(p.thinning) : undefined,
+              thinking: p.thinking ? String(p.thinking) : undefined,
               metadata: (p.metadata as Record<string, any>) || {},
             });
           }
@@ -538,7 +546,7 @@ export class EventLedger {
           const msg = messages.find((m) => m.id === msgId);
           if (msg) {
             if (p.content) msg.content = String(p.content);
-            if (p.thinning) msg.thinking = String(p.thinning);
+            if (p.thinking) msg.thinking = String(p.thinking);
             Object.assign(msg.metadata, p.metadata || {});
           }
           break;

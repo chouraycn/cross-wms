@@ -5,6 +5,8 @@ import { getGrayScale } from '../../constants/theme';
 interface ChatHeroProps {
   onPromptClick: (prompt: string) => void;
   prompts?: { title: string; desc: string; icon: string }[];
+  /** 是否显示 CDF Know 标题区域（空状态已有品牌时可关闭）默认 true */
+  showTitle?: boolean;
 }
 
 const DEFAULT_PROMPTS = [
@@ -14,7 +16,7 @@ const DEFAULT_PROMPTS = [
   { title: '分析拣货效率', desc: '对比各波次的拣货时长和准确率', icon: '⚡' },
 ];
 
-export const ChatHero = React.memo(({ onPromptClick, prompts = DEFAULT_PROMPTS }: ChatHeroProps) => {
+export const ChatHero = React.memo(({ onPromptClick, prompts = DEFAULT_PROMPTS, showTitle = true }: ChatHeroProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -62,28 +64,32 @@ export const ChatHero = React.memo(({ onPromptClick, prompts = DEFAULT_PROMPTS }
           textAlign: 'center',
         }}
       >
-        <Typography
-          sx={{
-            fontSize: '1.5rem',
-            fontWeight: 600,
-            mb: 1,
-            background: 'linear-gradient(135deg, #2563EB, #4F46E5)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
-          CDF Know
-        </Typography>
-        <Typography
-          sx={{
-            fontSize: '0.875rem',
-            color: gs.textMuted,
-            mb: 3,
-          }}
-        >
-          我可以帮你查询库存、生成报表、维护商品信息，试试下面的快捷指令
-        </Typography>
+        {showTitle && (
+          <>
+            <Typography
+              sx={{
+                fontSize: '1.5rem',
+                fontWeight: 600,
+                mb: 1,
+                background: 'linear-gradient(135deg, #2563EB, #4F46E5)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              CDF Know
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '0.875rem',
+                color: gs.textMuted,
+                mb: 3,
+              }}
+            >
+              我可以帮你查询库存、生成报表、维护商品信息，试试下面的快捷指令
+            </Typography>
+          </>
+        )}
 
         <Box
           sx={{

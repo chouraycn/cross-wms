@@ -1072,4 +1072,5 @@ export const StaffIdPrefix = {
   channelBinding: 'chbind',
   channelIdentity: 'chident',
   channelDelivery: 'chdlv',
+  delegation: 'deleg',
 } as const;

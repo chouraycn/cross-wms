@@ -37,6 +37,7 @@ const packageMap: Array<{ pkg: string; src: string; exactIndex?: string }> = [
 
   // @cdf-know/* 别名（与 @openclaw/* 指向相同的源码目录）
   { pkg: '@cdf-know/llm-core', src: './packages/llm-core/src' },
+  { pkg: '@cdf-know/agent-core', src: './packages/agent-core/src' },
   { pkg: '@cdf-know/model-catalog-core', src: './packages/model-catalog-core/src' },
   { pkg: '@cdf-know/sdk', src: './packages/sdk/src' },
   { pkg: '@cdf-know/gateway-client', src: './packages/gateway-client/src' },
