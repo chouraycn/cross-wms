@@ -31,6 +31,7 @@ import {
   clearExecutionLogs,
 } from '../services/automation/api';
 import { usePageFadeIn } from '../hooks/usePageFadeIn';
+import LoadingFallback from '../components/Common/LoadingFallback';
 import type {
   Automation,
   TaskType,
@@ -87,7 +88,7 @@ const AutomationPage: React.FC = () => {
 
   // --- 数据状态 ---
   const [automations, setAutomations] = useState<Automation[]>([]);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -797,6 +798,7 @@ const AutomationPage: React.FC = () => {
 
       {/* ========== 已配置栏目 ========== */}
       {activeTab === 'configured' && (
+        loading ? <LoadingFallback /> :
         <AutomationList
           automations={automations}
           searchQuery={searchQuery}

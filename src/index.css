@@ -14,6 +14,17 @@ body {
   /* v1.5.73: easy_drag=False 时全局排除拖拽，仅有 WindowDragBar 为 drag 区域 */
   /* 确保内容区文字始终可选中（WKWebView 中 -webkit-app-region:drag 会阻止文字选择） */
   -webkit-app-region: no-drag;
+  /* v1.7.235: 阻止 body 自身滚动 — 滚动由内部 scrollRef 容器接管，
+     避免 body 与主滚动容器双重滚动冲突（滚动到底部时事件冒泡导致页面跳动） */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html {
+  /* v1.7.235: html 也禁止滚动 + overscroll-behavior:none，
+     彻底切断滚动链（scroll chaining） */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* MUI dark mode 会给 body 添加 .MuiCssBaseline-root 和设置 background-color */
@@ -22,7 +33,10 @@ body {
 }
 
 #root {
-  min-height: 100vh;
+  /* v1.7.235: height 替代 min-height — 防止 root 超出视窗产生 body 滚动条
+     与内部 scrollRef 滚动容器冲突（双重滚动 → 卡顿/无法滚动） */
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* Custom scrollbar — 默认隐藏，滚动时显示 */

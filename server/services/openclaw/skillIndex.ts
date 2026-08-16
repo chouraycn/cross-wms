@@ -44,14 +44,46 @@ export interface SkillSearchResult {
 export class SkillIndex {
   private entries: SkillIndexEntry[] = [];
   private skillsDir: string;
+  // 性能优化：目录扫描结果缓存（按 skillsDir 粒度）
+  // 避免 GET /list、/search、/filter、/categories、/tags 等多次重复扫描 fs
+  private static readonly cacheByDir = new Map<string, {
+    entries: SkillIndexEntry[];
+    snapshot: { mtime: number; size: number; count: number } | null;
+  }>();
 
   constructor(skillsDir: string) {
     this.skillsDir = skillsDir;
   }
 
+  /** 读取 skillsDir 根目录的 mtime/size/子目录数量快照，用于判断缓存是否失效 */
+  private readDirSnapshot(): { mtime: number; size: number; count: number } | null {
+    try {
+      if (!fs.existsSync(this.skillsDir)) return null;
+      const stat = fs.statSync(this.skillsDir);
+      const names = fs.readdirSync(this.skillsDir).filter(n => !n.startsWith('.'));
+      return { mtime: stat.mtimeMs, size: stat.size, count: names.length };
+    } catch {
+      return null;
+    }
+  }
+
   build(): void {
     this.entries = [];
     if (!fs.existsSync(this.skillsDir)) return;
+
+    // ====== 命中缓存且快照未变化 → 直接复用 ======
+    const snapshot = this.readDirSnapshot();
+    const cached = SkillIndex.cacheByDir.get(this.skillsDir);
+    if (cached && snapshot && cached.snapshot
+      && cached.snapshot.mtime === snapshot.mtime
+      && cached.snapshot.size === snapshot.size
+      && cached.snapshot.count === snapshot.count) {
+      this.entries = cached.entries;
+      return;
+    }
+
+    // 过滤无效技能：名字/ID 以 "skill" 开头（含带版本号的噪音：skill-v1.2.3 / skill-1.0.0 等）
+    const INVALID_SKILL_RE = /^skill[-_]?/i;
 
     const processDir = (dirPath: string, prefix = '') => {
       try {
@@ -62,6 +94,9 @@ export class SkillIndex {
 
           const fullPath = path.join(dirPath, entry.name);
           const skillId = prefix ? `${prefix}/${entry.name}` : entry.name;
+
+          // 底层过滤：ID 或目录名以 skill 开头的条目全部跳过
+          if (INVALID_SKILL_RE.test(skillId) || INVALID_SKILL_RE.test(entry.name)) continue;
 
           const skillMdPath = path.join(fullPath, 'SKILL.md');
           const skillMdLowerPath = path.join(fullPath, 'skill.md');
@@ -119,6 +154,12 @@ export class SkillIndex {
         processDir(path.join(importedDir, importer.name), importer.name);
       }
     }
+
+    // ====== 写入缓存 + 快照 ======
+    SkillIndex.cacheByDir.set(this.skillsDir, {
+      entries: [...this.entries],
+      snapshot: this.readDirSnapshot(),
+    });
   }
 
   getAll(): SkillIndexEntry[] {

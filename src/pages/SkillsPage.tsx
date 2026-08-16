@@ -31,8 +31,10 @@ import type { TaskType, AutomationExecution } from '../services/automation';
 import type { Automation } from '../services/automation/types';
 import { fetchAutomations, triggerAutomationApi, fetchExecutions } from '../services/automation/api';
 import { getAllSkills, onSkillsChange, setSkillStatus, loadAllUsageStats, refreshFromRemote, getUsageStats, loadAuditStatuses, refreshAuditForSkill, removeSkill, getBuiltinStatusPatchesSnapshot } from '../stores/skillStore';
+import { loadBuiltinSkills } from '../types/skill';
 import type { Skill, SkillWatchEvent, UsageStats } from '../types/skill';
 import { ICON_MAP } from '../types/skill';
+import LoadingFallback from '../components/Common/LoadingFallback';
 import type { DependencyCheckResult } from '../utils/dependencyChecker';
 import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_COLORS } from '../constants/skillCategories';
 import { findAllConflicts } from '../utils/skillConflict';
@@ -114,6 +116,19 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     }).catch(() => {});
   }, []);
 
+  // 内置技能目录懒加载状态：loadBuiltinSkills 通过动态 import 拆 chunk，
+  // 在 chunk 加载完成前 getBuiltinSkillsSync() 返回空数组 → 列表空白。
+  // 这里跟踪加载状态，未就绪时显示 LoadingFallback 避免白屏。
+  const [builtinsLoaded, setBuiltinsLoaded] = useState(() => getAllSkills().length > 0);
+  useEffect(() => {
+    if (builtinsLoaded) return;
+    let cancelled = false;
+    loadBuiltinSkills()
+      .then(() => { if (!cancelled) setBuiltinsLoaded(true); })
+      .catch(() => { if (!cancelled) setBuiltinsLoaded(true); });
+    return () => { cancelled = true; };
+  }, [builtinsLoaded]);
+
   const baseSkills = useMemo(() => {
     const _v = skillVersion;
     return getAllSkills();
@@ -125,18 +140,36 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   const skills = useMemo(() => {
     const patches = getBuiltinStatusPatchesSnapshot();
     const openclawIds = new Set(openclawSkills.map(s => s.id));
-    // 排除 runtime 技能（已被 openclaw 版本替代）
-    const filtered = baseSkills.filter(s => !((s as any).source === 'runtime' && openclawIds.has(s.id)));
+    // 过滤所有以 skill 开头的无效条目（与底层 SkillIndex 保持一致的规则）
+    const INVALID_SKILL_RE = /^skill[-_]?/i;
+    // 排除 runtime 技能（已被 openclaw 版本替代），同时在 baseSkills 层过滤以 skill 开头的无效条目
+    // 并对 baseSkills（本地内置 + 用户技能）也套用 BUILTIN_ZH 中文词典
+    const filtered = baseSkills
+      .filter(s => {
+        if ((s as any).source === 'runtime' && openclawIds.has(s.id)) return false;
+        if (INVALID_SKILL_RE.test(s.id) || INVALID_SKILL_RE.test(s.name)) return false;
+        return true;
+      })
+      .map(s => {
+        const zh = BUILTIN_ZH[s.id];
+        if (!zh) return s;
+        return {
+          ...s,
+          name: zh.name || s.name,
+          desc: zh.desc || s.desc,
+          category: zh.category || s.category,
+          tags: zh.tags && zh.tags.length > 0 ? zh.tags : s.tags,
+        };
+      });
     // 中文判断工具：若字符串含任何非 ASCII（中日韩），视为已有中文
     const hasCjk = (s: string | null | undefined) => !!s && /[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(s);
 
-    // T2：过滤以 skill 开头并跟版本号的无用条目（形如 skill-v1.2.3 / skill-v0.0.1 / skill-1.0.0 等）
-    const VERSIONED_NOISE_RE = /^skill[-_]?v?\d+[\._]\d+/i;
     const deduped = new Map<string, OpenClawSkillEntry>();
     for (const entry of openclawSkills) {
       const id = entry.id || '';
       const name = entry.name || '';
-      if (VERSIONED_NOISE_RE.test(id) || VERSIONED_NOISE_RE.test(name)) continue;
+      // 与底层保持一致：所有以 skill 开头的条目全部跳过
+      if (INVALID_SKILL_RE.test(id) || INVALID_SKILL_RE.test(name)) continue;
       // 同 id 合并：保留元数据更丰富的（有 tags/description 的）
       const existing = deduped.get(id);
       if (!existing) {
@@ -204,23 +237,23 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     return unsubscribe;
   }, []);
 
-  // T03: 延迟加载使用统计（非关键数据，延迟 0.3s 加载）
+  // T03: 延迟加载使用统计（非关键数据，首屏渲染后再加载）
   useEffect(() => {
     const timer = setTimeout(() => {
       loadAllUsageStats().then(() => {
         setSkillVersion((v) => v + 1);
       }).catch(() => {});
-    }, 300);
+    }, 400);
     return () => clearTimeout(timer);
   }, []);
 
-  // 延迟加载安全审查状态（非关键数据，延迟 0.5s 加载）
+  // 延迟加载安全审查状态（最末端非关键数据：延迟到 1.5s 后；内置技能审计走内存缓存，用户技能并发 6 路请求）
   useEffect(() => {
     const timer = setTimeout(() => {
       loadAuditStatuses().then(() => {
         setSkillVersion((v) => v + 1);
       }).catch(() => {});
-    }, 500);
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -493,18 +526,6 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     e.target.value = '';
   }, []);
 
-  // T04: 冲突信息 — 前端纯计算，skillId → { hasConflict, conflictCount }
-  const conflictMap = useMemo(() => {
-    const map = new Map<string, { hasConflict: boolean; conflictCount: number }>();
-    const all = getAllSkills();
-    for (const skill of all) {
-      const conflicts = findAllConflicts(skill, all, 0.4);
-      const count = conflicts.length;
-      map.set(skill.id, { hasConflict: count > 0, conflictCount: count });
-    }
-    return map;
-  }, [skillVersion]);
-
   // T04: 动态分类列表 — 包含 CATEGORY_ORDER 中的分类 + 用户技能新增的分类
   const dynamicCategories = useMemo(() => {
     const userCategories = new Set<string>();
@@ -622,15 +643,19 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         try {
           const data = await fetchAutomations();
           setAutomations(data);
+          // 并行获取所有自动化的最近 1 条执行记录，而非串行 await
+          const execResults = await Promise.all(
+            data.map(async (auto) => {
+              try {
+                const result = await fetchExecutions(auto.id, 1);
+                return [auto.taskType || '', result.data[0] || null] as const;
+              } catch {
+                return [auto.taskType || '', null] as const;
+              }
+            }),
+          );
           const map: Record<string, AutomationExecution | null> = {};
-          for (const auto of data) {
-            try {
-              const result = await fetchExecutions(auto.id, 1);
-              map[auto.taskType || ''] = result.data[0] || null;
-            } catch {
-              map[auto.taskType || ''] = null;
-            }
-          }
+          for (const [k, v] of execResults) map[k] = v;
           setLatestExecByType(map);
         } catch {
           // ignore errors
@@ -759,6 +784,21 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
       return 0;
     });
   }, [debouncedSearchQuery, selectedCategory, selectedTags, skills, activeTab, sortBy]);
+
+  // T04: 冲突信息 — 前端计算，skillId → { hasConflict, conflictCount }
+  // 性能优化：仅比较当前过滤后的可见列表（manage tab 下完全跳过），
+  // 避免每次 skillVersion 变化都对全量技能做 O(N²) 相似度计算。
+  const conflictMap = useMemo(() => {
+    if (activeTab === 'manage') return new Map<string, { hasConflict: boolean; conflictCount: number }>();
+    const map = new Map<string, { hasConflict: boolean; conflictCount: number }>();
+    const list = filteredSkills.length > 0 ? filteredSkills : skills;
+    for (const skill of list) {
+      const conflicts = findAllConflicts(skill, list, 0.4);
+      const count = conflicts.length;
+      map.set(skill.id, { hasConflict: count > 0, conflictCount: count });
+    }
+    return map;
+  }, [filteredSkills, skills, activeTab]);
 
   const [keywordStatsOpen, setKeywordStatsOpen] = useState(false);
 
@@ -889,6 +929,18 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   // ===================== 渲染 =====================
 
   const fadeCls = usePageFadeIn();
+
+  // 内置技能目录尚未加载且当前无任何技能数据时，显示 loading 避免白屏
+  if (!builtinsLoaded && baseSkills.length === 0) {
+    return (
+      <Box className={fadeCls} sx={{
+        px: 1, maxWidth: 1100, mx: 'auto', width: '100%',
+        pt: nativeApp && leftSidebarCollapsed ? 'calc(var(--pw-top, 0px) + 4px)' : '8px',
+      }}>
+        <LoadingFallback />
+      </Box>
+    );
+  }
 
   return (
     <Box className={fadeCls} sx={{

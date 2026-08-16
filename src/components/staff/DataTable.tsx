@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { Box } from '@mui/material';
+import { Box, Skeleton } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import {
   Table,
@@ -134,7 +134,21 @@ export function DataTable<T>({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {hasData ? (
+          {loading && !hasData ? (
+            // 骨架行：5 行与实际行高一致的 Skeleton，避免加载完成时表格高度突变闪屏
+            Array.from({ length: 5 }, (_, i) => (
+              <TableRow key={`skeleton-${i}`} sx={{ borderBottom: '1px solid var(--surface-muted)' } as SxProps<Theme>}>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.key}
+                    sx={[BODY_CELL_SX, BODY_HEIGHT_SX[size]] as SxProps<Theme>}
+                  >
+                    <Skeleton variant="text" width="80%" height={16} sx={{ fontSize: '12px' }} />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : hasData ? (
             data.map((row, index) => (
               <TableRow
                 key={rowKey(row, index)}
@@ -189,7 +203,7 @@ export function DataTable<T>({
                   } as SxProps<Theme>
                 }
               >
-                {loading ? loadingText : emptyText}
+                {emptyText}
               </TableCell>
             </TableRow>
           )}

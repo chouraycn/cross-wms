@@ -1,4 +1,5 @@
-// AppHeader — 数字员工模块通用页头（标题 + 描述 + 返回 + 用户菜单）。
+// AppHeader — 数字员工模块通用页头（标题 + 描述 + 返回 + 自定义右侧操作区）。
+// v1.7.235: 已移除右上角登录/用户菜单（桌面端无员工认证登录体系，无需身份入口）。
 import type { ReactNode } from 'react';
 import { Box } from '@mui/material';
 
@@ -7,8 +8,6 @@ export type AppHeaderProps = {
   title?: ReactNode;
   description?: ReactNode;
   right?: ReactNode;
-  onLogout?: () => void;
-  userName?: string;
   className?: string;
   showBack?: boolean;
   onBack?: () => void;
@@ -19,13 +18,10 @@ export default function AppHeader({
   title,
   description,
   right,
-  onLogout,
-  userName,
   className,
   showBack,
   onBack,
 }: AppHeaderProps) {
-  const initial = userName?.trim()?.[0]?.toUpperCase();
   const backButton = showBack ? (
     <Box
       component="button"
@@ -72,50 +68,11 @@ export default function AppHeader({
       className={className}
     >
       <Box sx={{ minWidth: 0, flex: 1 }}>{leftContent}</Box>
-      <Box sx={{ display: 'flex', height: '32px', flexShrink: 0, alignItems: 'center', gap: '8px' }}>
-        {right !== undefined ? right : (
-          userName ? (
-            <Box
-              component="button"
-              type="button"
-              onClick={onLogout}
-              sx={{
-                display: 'flex',
-                height: '32px',
-                flexShrink: 0,
-                alignItems: 'center',
-                gap: '8px',
-                borderRadius: '10px',
-                pl: '4px',
-                pr: '8px',
-                outline: 'none',
-                '&:hover': { bgcolor: 'var(--surface-muted)' },
-              }}
-            >
-              <Box
-                component="span"
-                sx={{
-                  display: 'grid',
-                  width: '32px',
-                  height: '32px',
-                  flexShrink: 0,
-                  placeItems: 'center',
-                  overflow: 'hidden',
-                  borderRadius: '50%',
-                  bgcolor: '#eef1fb',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: 'none',
-                  color: '#7e96dc',
-                }}
-              >
-                {initial || 'U'}
-              </Box>
-              <Box component="span" sx={{ fontSize: '12px', color: 'var(--ink-soft)' }}>{userName}</Box>
-            </Box>
-          ) : null
-        )}
-      </Box>
+      {right !== undefined ? (
+        <Box sx={{ display: 'flex', height: '32px', flexShrink: 0, alignItems: 'center', gap: '8px' }}>
+          {right}
+        </Box>
+      ) : null}
     </Box>
   );
 }

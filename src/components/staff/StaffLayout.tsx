@@ -2,16 +2,21 @@
  * StaffLayout — StaffDeck 模块的外层布局
  *
  * 职责：
- * 1. 渲染简化版侧边栏 + 顶部用户条（桌面端无员工认证登录体系，始终默认身份）
- * 2. 通过 React Context 将 currentUser/isAdmin 注入到所有子页面
+ * 1. 渲染简化版侧边栏（桌面端无员工认证登录体系，始终默认身份）
+ * 2. 通过 React Context 将 currentUser/isAdmin 注入到子页面（供业务数据使用，不显示身份 UI）
  * 3. 拦截 AppSidebar 的 onNavigate 回调，转换为 react-router 的 navigate 调用
  *
  * 设计原则：与 cross-wms 主应用联动 — 数字员工作为子模块随应用启动直接使用
  * 默认身份（default-user / admin）。后端 staffAuth 中间件对无 token 请求兜底
- * default-user，因此前端无需登录页、登录门或退出按钮。
+ * default-user，因此前端无需登录页、登录门、退出按钮或任何身份 UI。
+ *
+ * v1.7.235 清理：
+ *  - 移除顶部用户条占位（44px header 空面板 + borderBottom 分隔线）
+ *  - 移除右上角登录头像、用户菜单、登出口
+ *  - Context 中 onLogout 字段保留空实现（仅维持 HOC 形状，不做任何 UI 绑定）
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, memo, useRef } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
@@ -206,6 +211,19 @@ function StaffSidebar({
 
 // ============================ Layout ============================
 
+/** 将 session 对象序列化为可比较的字符串（null 统一为 ''），用于 storage 事件的浅比较 */
+function stringifySession(s: EnterpriseAuthSession | null): string {
+  if (!s) return '';
+  try {
+    return JSON.stringify({
+      user: s.user ?? null,
+      token: typeof s.token === 'string' ? s.token : '',
+    });
+  } catch {
+    return '';
+  }
+}
+
 export type StaffLayoutProps = {
   children?: ReactNode;
 };
@@ -219,12 +237,18 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     getEnterpriseAuthSession(),
   );
 
+  const sessionFingerprintRef = useRef(stringifySession(session));
+
   // 监听其他标签页的 storage 变更：保持 currentUser 一致
+  // 防闪：仅当新会话与当前会话真的不同（指纹不一致）才 setState，避免无意义 re-render
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key === ENTERPRISE_AUTH_STORAGE_KEY) {
-        setSession(getEnterpriseAuthSession());
-      }
+      if (event.key !== ENTERPRISE_AUTH_STORAGE_KEY) return;
+      const next = getEnterpriseAuthSession();
+      const nextFp = stringifySession(next);
+      if (nextFp === sessionFingerprintRef.current) return;
+      sessionFingerprintRef.current = nextFp;
+      setSession(next);
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -273,22 +297,19 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
               overflow: 'hidden',
             }}
           >
-            {/* 顶部用户条（已清理右上角登录账号显示） */}
+            {/* 主内容区：v1.7.235 移除顶部空 header 占位（原放用户条，44px 高 + borderBottom 分隔线） */}
             <Box
-              component="header"
+              component="main"
               sx={{
-                display: 'flex',
-                height: '44px',
-                flexShrink: 0,
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                gap: '8px',
-                borderBottom: '1px solid var(--border, #F3F4F6)',
-                px: '16px',
+                minHeight: 0,
+                flex: 1,
+                overflowY: 'auto',
+                // v1.7.235: 滚动性能优化（与主应用 scrollRef 一致）
+                overscrollBehavior: 'contain',
+                contain: 'paint',
+                WebkitOverflowScrolling: 'touch',
               }}
-            />
-            {/* 主内容区 */}
-            <Box component="main" sx={{ minHeight: 0, flex: 1, overflowY: 'auto' }}>
+            >
               {children}
             </Box>
           </Box>

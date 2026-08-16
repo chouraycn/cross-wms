@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 
 import {
   DEFAULT_AVATAR_PRESET,
@@ -45,6 +45,10 @@ export default function EmployeeAvatar({
   const profile = profileOverride || employeeProfile(agent);
   void DEFAULT_AVATAR_PRESET;
 
+  // 图片加载状态：未完成时显示占位背景，完成后淡入图片（避免灰底突然变图片闪屏）
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
   const className_ = [
     'employee-avatar',
     className,
@@ -72,7 +76,13 @@ export default function EmployeeAvatar({
     objectFit: fit,
     objectPosition,
     transform: 'none',
+    // 加载完成前 opacity:0（占位背景可见），完成后 opacity:1 淡入
+    opacity: imgLoaded && !imgError ? 1 : 0,
+    transition: 'opacity 0.15s ease',
   };
+
+  // 文字回退：图片加载失败时显示首字
+  const fallbackText = profile.avatarText || '员';
 
   return (
     <span
@@ -80,7 +90,29 @@ export default function EmployeeAvatar({
       style={boxStyle}
       aria-label={`${profile.avatarText || '员'}员工头像`}
     >
-      <img src={employeeAvatarImage(profile)} alt="" style={imageStyle} />
+      {/* 图片加载中/失败时显示的文字占位 */}
+      {!imgLoaded && (
+        <span
+          style={{
+            position: 'absolute',
+            fontSize: `${(width ?? size) * 0.4}px`,
+            fontWeight: 500,
+            color: '#858b9c',
+            userSelect: 'none',
+          }}
+        >
+          {fallbackText}
+        </span>
+      )}
+      {!imgError && (
+        <img
+          src={employeeAvatarImage(profile)}
+          alt=""
+          style={imageStyle}
+          onLoad={() => setImgLoaded(true)}
+          onError={() => { setImgError(true); setImgLoaded(true); }}
+        />
+      )}
     </span>
   );
 }

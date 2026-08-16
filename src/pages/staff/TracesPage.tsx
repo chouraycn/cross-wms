@@ -31,12 +31,16 @@ export default function TracesPage() {
   const [rows, setRows] = useState<TraceSummary[]>([]);
   const [detail, setDetail] = useState<Record<string, any> | null>(null);
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  const load = () =>
-    api
+  const load = () => {
+    setLoading(true);
+    return api
       .get<TraceSummary[]>(`/traces?tenant_id=${TENANT_ID}`)
       .then(setRows)
-      .catch((error) => notify.error(error.message));
+      .catch((error) => notify.error(error.message))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
     void load();
@@ -99,6 +103,7 @@ export default function TracesPage() {
                 columns={columns}
                 data={pagedItems}
                 rowKey={(row) => row.session_id}
+                loading={loading}
                 emptyText="暂无 Trace"
               />
             </Box>

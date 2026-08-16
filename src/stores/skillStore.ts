@@ -283,10 +283,15 @@ export function getAuditStatus(skillId: string): SkillAudit | undefined {
 /** 批量加载所有技能的审计状态 */
 export async function loadAuditStatuses(): Promise<void> {
   const skills = getAllSkills();
+  const pending: Array<Promise<void>> = [];
+  // 限制并发数：避免一次性请求过多导致接口阻塞/限流
+  const CONCURRENCY = 6;
+  const queue: Array<() => Promise<void>> = [];
+
   for (const skill of skills) {
     try {
       if (skill.source === 'builtin') {
-        // 内置技能：无需外部文件审查，默认标记为安全
+        // 内置技能：无需外部文件审查，默认标记为安全（内存级写入，不触发 IO）
         if (!auditStatusCache.has(skill.id)) {
           auditStatusCache.set(skill.id, {
             id: `builtin-audit-${skill.id}`,
@@ -301,15 +306,33 @@ export async function loadAuditStatuses(): Promise<void> {
           });
         }
       } else {
-        const audit = await api.fetchSkillAudit(skill.id);
-        if (audit) {
-          auditStatusCache.set(skill.id, audit);
-        }
+        // 用户技能：已缓存则跳过
+        if (auditStatusCache.has(skill.id)) continue;
+        queue.push(async () => {
+          const audit = await api.fetchSkillAudit(skill.id);
+          if (audit) auditStatusCache.set(skill.id, audit);
+        });
       }
     } catch {
       // 静默处理单个技能的审计查询失败
     }
   }
+
+  // 以 CONCURRENCY 并发消费队列
+  let cursor = 0;
+  const worker = async (): Promise<void> => {
+    while (cursor < queue.length) {
+      const idx = cursor++;
+      try {
+        await queue[idx]();
+      } catch {
+        // 单个失败不阻塞整体
+      }
+    }
+  };
+  const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, () => worker());
+  await Promise.all(workers);
+
   notifyAll();
 }
 

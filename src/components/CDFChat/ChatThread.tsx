@@ -642,26 +642,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     }
   }, [searchParams, setSearchParams, isPage]);
 
-  // 仅在 isPage 首次挂载 300ms 后聚焦一次：
-  // - 若输入框内已有焦点（用户正在打字）或有文字则绝不抢焦点
-  // - 不再因 ChatSessionContext 流式重渲染重复触发
-  // - 使用 textarea[data-testid="chat-input"] 精准选择（项目里已不是 contenteditable 方案）
-  const chatPageMountFocusedRef = useRef(false);
-  useEffect(() => {
-    if (!isPage) return;
-    if (chatPageMountFocusedRef.current) return;
-    chatPageMountFocusedRef.current = true;
-    const timer = setTimeout(() => {
-      const editable = document.querySelector<HTMLTextAreaElement | HTMLInputElement>('textarea[data-testid="chat-input"], textarea, [contenteditable="true"]');
-      if (!editable) return;
-      if (document.activeElement && document.activeElement === editable) return;
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
-      const v = (editable as HTMLTextAreaElement).value;
-      if (editable.textContent?.trim() || (typeof v === 'string' && v.trim())) return;
-      editable.focus();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [isPage]);
+  // 「不」在页面挂载时自动抢焦点 — 用户期望点击输入框后才出现光标。
+  // 旧逻辑（chatPageMountFocusedRef）在进入聊天页 300ms 后强制 focus，
+  // 会导致侧边栏/员工页切换过来时光标一闪，打断用户当前操作。
+  // 仅在用户主动点击输入框 / 发送消息 / 快捷键触发后再由输入组件内部聚焦。
 
   // ===================== 消息操作回调（提取至 useChatActions） =====================
   const {

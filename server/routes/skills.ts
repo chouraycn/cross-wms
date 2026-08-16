@@ -993,6 +993,14 @@ function getSkillLifecycle(): SkillLifecycle {
 
 function refreshSkillIndex(): void {
   skillIndexInstance = null;
+  // 清理 SkillIndex 类的静态缓存，确保下一次 build() 强制重新扫描磁盘
+  try {
+    // @ts-expect-error 访问私有静态缓存用于失效处理
+    const cache = SkillIndex.cacheByDir;
+    if (cache && cache instanceof Map) cache.clear();
+  } catch {
+    // 忽略访问失败（类型结构变更等）
+  }
 }
 
 // GET /api/openclaw/skills/search — 技能搜索

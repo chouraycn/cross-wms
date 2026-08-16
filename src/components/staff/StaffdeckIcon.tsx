@@ -24,7 +24,6 @@ export type StaffdeckIconName =
   | 'image'
   | 'inbox'
   | 'info'
-  | 'logout'
   | 'lock'
   | 'model'
   | 'moon'
@@ -92,7 +91,6 @@ const iconPaths: Record<StaffdeckIconName, string[]> = {
   image: ['M5 5h14v14H5V5Z', 'M8.5 10a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Z', 'M5 16l4.4-4.4 3.4 3.4 2.1-2.1L19 17'],
   inbox: ['M4 5h16l-2 10h-3a3 3 0 0 1-6 0H6L4 5Z', 'M4 15v4h16v-4'],
   info: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z', 'M12 11v5', 'M12 8h.1'],
-  logout: ['M9 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H9', 'M14 8l4 4-4 4', 'M18 12H9'],
   lock: ['M7 11h10v9H7v-9Z', 'M9 11V8a3 3 0 0 1 6 0v3'],
   model: ['M12 4l7 4v8l-7 4-7-4V8l7-4Z', 'M12 12l7-4', 'M12 12v8', 'M12 12L5 8'],
   moon: ['M20 14.7A7.5 7.5 0 0 1 9.3 4a8.5 8.5 0 1 0 10.7 10.7Z'],

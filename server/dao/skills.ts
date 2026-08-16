@@ -1,5 +1,10 @@
 import { initDb } from '../db.js';
 import type { UserSkillRow, BuiltinStatusPatchRow } from '../db.js';
+import fs from 'fs';
+import path from 'path';
+
+// 过滤无效技能：名字/ID 以 "skill" 开头
+const INVALID_SKILL_RE = /^skill[-_]?/i;
 
 // ===================== User Skills DAO =====================
 
@@ -54,7 +59,10 @@ export function clientToSkillRow(data: Record<string, any>): Omit<UserSkillRow, 
 export function getUserSkills(): Record<string, any>[] {
   const db = initDb();
   const rows = db.prepare('SELECT * FROM user_skills ORDER BY installedAt DESC').all() as UserSkillRow[];
-  return rows.map(skillRowToClient);
+  // 底层过滤：排除 id 或 name 以 skill 开头的无效条目
+  return rows
+    .filter((row) => !INVALID_SKILL_RE.test(row.id) && !INVALID_SKILL_RE.test(row.name))
+    .map(skillRowToClient);
 }
 
 export function getUserSkillById(id: string): Record<string, any> | undefined {
@@ -91,7 +99,26 @@ export function updateUserSkill(id: string, data: Record<string, any>): Record<s
 
 export function deleteUserSkill(id: string): boolean {
   const db = initDb();
+  const existing = db.prepare('SELECT * FROM user_skills WHERE id = ?').get(id) as UserSkillRow | undefined;
+  if (!existing) return false;
+
   const result = db.prepare('DELETE FROM user_skills WHERE id = ?').run(id);
+  if (result.changes > 0) {
+    // best-effort: 删除磁盘上对应的技能目录（~/{AppDir}/skills/<id>/）
+    try {
+      // 动态 require 避免与 appPaths 的循环依赖
+      const { AppPaths } = require('../config/appPaths.js') as { AppPaths: { skillsDir: string } };
+      const skillsDir = AppPaths?.skillsDir;
+      if (skillsDir) {
+        const targetDir = path.join(skillsDir, id);
+        if (fs.existsSync(targetDir)) {
+          fs.rmSync(targetDir, { recursive: true, force: true });
+        }
+      }
+    } catch {
+      // 目录删除失败不影响 DB 删除结果
+    }
+  }
   return result.changes > 0;
 }
 

@@ -145,6 +145,7 @@ TEST_REPORT_*.md
 # Screenshot & e2e-artifacts that aren't fixtures
 screenshot-*.png
 e2e_screenshots/
+test-screenshots/
 preview-extensions*.mjs
 diagnose*.mjs
 compare-pages.mjs

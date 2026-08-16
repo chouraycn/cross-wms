@@ -418,7 +418,7 @@ function safeLazy<T = any>(
     }
 
     return (
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingFallback />}>
         <LazyComp {...(props as any)} />
       </Suspense>
     );
@@ -526,6 +526,33 @@ import StaffLayout, { withStaffAuth as wrapStaffAuth } from './components/staff/
 const StaffTracesPage = React.lazy(() => import('./pages/staff/TracesPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffDebugPage = React.lazy(() => import('./pages/staff/DebugPage').then(m => ({ default: wrapStaffAuth(m.default) })));
 const StaffTutorialPage = React.lazy(() => import('./pages/staff/TutorialPage').then(m => ({ default: wrapStaffAuth(m.default) })));
+
+// ====== 运维页面（Traces/Debug/Tutorial）空闲预加载（d8 防闪） ======
+// 这三个页面由 React.lazy 包裹，首次点击会触发 Suspense fallback：
+//   fallback 是「没有侧边栏的全局骨架」，而真实页面是「StaffLayout 240px 侧栏 + 内容」，
+//   两者结构高度差 240px，导致 fallback→真实内容切换时内容整体右移，产生明显布局跳闪。
+// 解决方案：App 启动后空闲时间（requestIdleCallback / setTimeout 2s 兜底）提前 import 对应 chunk。
+// 用户点击时 lazy Promise 已 fulfilled，不会触发 fallback。
+(function preloadStaffOpsPages(): void {
+  if (typeof window === 'undefined') return;
+  const schedule = (): void => {
+    try {
+      import('./pages/staff/TracesPage');
+      import('./pages/staff/DebugPage');
+      import('./pages/staff/TutorialPage');
+    } catch {
+      /* 静默忽略：用户点击时 lazy fallback 路径兜底 */
+    }
+  };
+  const w = window as unknown as {
+    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+  };
+  if (typeof w.requestIdleCallback === 'function') {
+    w.requestIdleCallback(schedule, { timeout: 3000 });
+  } else {
+    window.setTimeout(schedule, 2000);
+  }
+})();
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -1131,6 +1158,28 @@ const MainLayout: React.FC = () => {
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const location = useLocation();
+  // ===== 防闪：员工相关路径下，main 外壳隐藏（保持占位但不可见） =====
+  // 包含：
+  //  1) iframe 激活路径 /staffdeck、/warehouse-staff（最终展示容器）
+  //  2) React Router Navigate 重定向路径（/staff、/enterprise、/workspace 及其子路径除运维页）
+  //     —— 这些路径 element=Navigate，在真正 redirect 前有一帧会渲染 main 外壳的白色圆角面板，
+  //        然后下帧 staffdeck Portal 才盖上来，造成「白框一闪」感知。
+  //     —— 只要路径会最终进入员工 iframe，就提前隐藏 main。
+  const staffPortalActive = (() => {
+    const p = location.pathname;
+    if (p === '/staffdeck' || p === '/warehouse-staff') return true;
+    // 精确重定向路径
+    if (p === '/staff' || p === '/enterprise' || p === '/workspace') return true;
+    // /staff/* 与 /workspace/*：全部重定向到 /staffdeck
+    if (p.startsWith('/staff/') || p.startsWith('/workspace/')) return true;
+    // /enterprise/*：3 个运维页面例外（正常渲染在 main 中），其余 redirect
+    if (p.startsWith('/enterprise/')) {
+      const tail = p.slice('/enterprise/'.length);
+      if (tail === 'traces' || tail === 'debug' || tail === 'tutorial') return false;
+      return true;
+    }
+    return false;
+  })();
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(max-width: 768px)').matches;
@@ -1290,16 +1339,19 @@ const MainLayout: React.FC = () => {
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: 'background.paper',
+          // 员工栏目激活时：背景透明 + 无边框 + 不可见（visibility 保留占位，layout 不抖）
+          backgroundColor: staffPortalActive ? 'transparent' : 'background.paper',
+          border: staffPortalActive ? 'none' : '1px solid #eeeeee',
+          visibility: staffPortalActive ? 'hidden' : 'visible',
           height: 'calc(100vh - 18px)',
           margin: '9px 9px 9px 9px', // 内容区缩小3px，让灰色背景更多
-          // v1.7.15: 描边颜色改为 #eeeeee
-          border: '1px solid #eeeeee',
           paddingTop: 0,
           position: 'relative',
           borderRadius: '12px',
           overflow: 'hidden',
-          transition: 'margin 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: staffPortalActive
+            ? 'none'
+            : 'margin 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           // v2.3.0: 内容区排除拖拽，允许文本选择/复制
           WebkitAppRegion: 'no-drag',
         }}
@@ -1339,6 +1391,13 @@ const MainLayout: React.FC = () => {
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
+              // v1.7.235: 滚动性能优化
+              // - overscrollBehavior:contain 切断滚动链，防止滚到底/顶时事件冒泡到父级触发页面跳动
+              // - contain:paint 限定绘制边界，滚动时只重绘可视区域，减少整页重绘开销
+              // - WebkitOverflowScrolling:touch 启用惯性滚动（触控板/触摸场景）
+              overscrollBehavior: 'contain',
+              contain: 'paint',
+              WebkitOverflowScrolling: 'touch',
               // 滚动条默认隐藏，滚动时显示（通过 scrollbar-visible class）
               '&::-webkit-scrollbar': { width: '6px', height: '6px' },
               '&::-webkit-scrollbar-track': { background: 'transparent' },
@@ -1361,6 +1420,10 @@ const MainLayout: React.FC = () => {
                 // 按钮位于 top:21px、高度约 26px，内容区需约 40px 额外顶部间距
                 pt: sidebarCollapsed && location.pathname !== '/chat' ? '40px' : 0.375,
                 pb: 3,
+                // v1.7.235: flexShrink:0 防止内容被 flex 布局压缩导致无法滚动
+                // 父级 scrollRef 是 flex column 容器，默认 flex-shrink:1 会压缩子项，
+                // 内容高于容器时子项被压缩而非触发滚动条 — 这是"无法往下滑"的根因
+                flexShrink: 0,
                 '& .full-width-page': {
                   mx: -3, // 抵消 px: 3，让全宽组件保持全宽
                   mt: -0.5, // 抵消 pt: 0.5
@@ -1468,16 +1531,18 @@ const MainLayout: React.FC = () => {
                     {/* ===================== StaffDeck 模块路由 =====================
                        2026-08-05：存量 MUI 版数字员工页面已清理，统一收敛到 iframe 版（/staffdeck）。
                        仅保留 3 个 iframe 版未覆盖的运维页（traces/debug/tutorial）与登录页。 */}
+                    {/* ↓ 以下 3 条具体路由必须放在 /enterprise/* 通配符之前，
+                        否则 React Router v6 会优先匹配通配符 redirect 到 /staffdeck，
+                        导致运维页面永远不可达。 */}
+                    <Route path="/enterprise/traces" element={<StaffLayout><StaffTracesPage /></StaffLayout>} />
+                    <Route path="/enterprise/debug" element={<StaffLayout><StaffDebugPage /></StaffLayout>} />
+                    <Route path="/enterprise/tutorial" element={<StaffLayout><StaffTutorialPage /></StaffLayout>} />
                     <Route path="/staff" element={<Navigate to="/staffdeck" replace />} />
                     <Route path="/enterprise" element={<Navigate to="/staffdeck" replace />} />
                     <Route path="/enterprise/*" element={<Navigate to="/staffdeck" replace />} />
                     <Route path="/staff/*" element={<Navigate to="/staffdeck" replace />} />
                     <Route path="/workspace" element={<Navigate to="/staffdeck" replace />} />
                     <Route path="/workspace/*" element={<Navigate to="/staffdeck" replace />} />
-                    {/* ↓ 以下 3 条 iframe 版尚未覆盖（运维/调试用），始终可达 */}
-                    <Route path="/enterprise/traces" element={<StaffLayout><StaffTracesPage /></StaffLayout>} />
-                    <Route path="/enterprise/debug" element={<StaffLayout><StaffDebugPage /></StaffLayout>} />
-                    <Route path="/enterprise/tutorial" element={<StaffLayout><StaffTutorialPage /></StaffLayout>} />
 
                     {/* ===================== 员工 100% 复刻入口 =====================
                         实际 iframe 由 App 层的 StaffDeckPortal 常驻挂载并控制显隐，
