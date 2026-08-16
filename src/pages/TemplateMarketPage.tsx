@@ -8,9 +8,6 @@ import {
   Typography,
   Paper,
   Grid,
-  Card,
-  CardContent,
-  CardActions,
   Button,
   Chip,
   Rating,
@@ -240,13 +237,11 @@ const TemplateMarketPage: React.FC = React.memo(() => {
           <Grid container spacing={2}>
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
-                <Card>
-                  <CardContent>
+                <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                     <Skeleton variant="text" width="60%" />
                     <Skeleton variant="text" width="100%" />
                     <Skeleton variant="text" width="80%" />
-                  </CardContent>
-                </Card>
+                </Box>
               </Grid>
             ))}
           </Grid>
@@ -262,8 +257,11 @@ const TemplateMarketPage: React.FC = React.memo(() => {
               const categoryInfo = getCategoryInfo(template.category);
               return (
                 <Grid item xs={12} sm={6} md={4} lg={3} key={template.id}>
-                  <Card
+                  <Box
                     sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
                       height: '100%',
                       display: 'flex',
                       flexDirection: 'column',
@@ -276,7 +274,7 @@ const TemplateMarketPage: React.FC = React.memo(() => {
                     }}
                     onClick={() => handleViewDetail(template)}
                   >
-                    <CardContent sx={{ flex: 1 }}>
+                    <Box sx={{ flex: 1, p: 2 }}>
                       {/* 头部 */}
                       <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
                         <Chip
@@ -323,8 +321,8 @@ const TemplateMarketPage: React.FC = React.memo(() => {
                           </Typography>
                         </Box>
                       </Box>
-                    </CardContent>
-                    <CardActions>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1, p: 2 }}>
                       <Button
                         size="small"
                         variant="contained"
@@ -335,8 +333,8 @@ const TemplateMarketPage: React.FC = React.memo(() => {
                       >
                         查看详情
                       </Button>
-                    </CardActions>
-                  </Card>
+                    </Box>
+                  </Box>
                 </Grid>
               );
             })}

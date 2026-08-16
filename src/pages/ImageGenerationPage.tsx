@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Button, Chip, IconButton, Paper, Tabs, Tab,
   TextField, Select, MenuItem, FormControl, InputLabel, Slider,
-  Tooltip, CircularProgress, Alert, Stack, Grid, Card, CardMedia,
-  CardContent, Dialog, DialogTitle, DialogContent, DialogActions,
+  Tooltip, CircularProgress, Alert, Stack, Grid,
+  Dialog, DialogTitle, DialogContent, DialogActions,
   Divider, useTheme,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -403,10 +403,11 @@ const ImageGenerationPage: React.FC = () => {
                     <Grid container spacing={1.5}>
                       {generatedImages.map((img, idx) => (
                         <Grid item xs={6} sm={4} key={idx}>
-                          <Card
+                          <Box
                             sx={{
                               cursor: 'pointer',
-                              border: `1px solid ${gs.border}`,
+                              border: '1px solid',
+                              borderColor: 'divider',
                               '&:hover': { borderColor: gs.textMuted },
                               transition: 'border-color 0.2s',
                             }}
@@ -415,14 +416,14 @@ const ImageGenerationPage: React.FC = () => {
                               setPreviewOpen(true);
                             }}
                           >
-                            <CardMedia
+                            <Box
                               component="img"
                               height={120}
-                              image={img.b64_json ? `data:image/png;base64,${img.b64_json}` : img.url}
+                              src={img.b64_json ? `data:image/png;base64,${img.b64_json}` : img.url}
                               alt={`Generated ${idx + 1}`}
                               sx={{ objectFit: 'cover' }}
                             />
-                            <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                            <Box sx={{ p: 1, '&:last-child': { pb: 1 } }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Typography variant="caption" sx={{ color: gs.textMuted }}>
                                   {img.width}x{img.height}
@@ -440,8 +441,8 @@ const ImageGenerationPage: React.FC = () => {
                                   </IconButton>
                                 </Tooltip>
                               </Box>
-                            </CardContent>
-                          </Card>
+                            </Box>
+                          </Box>
                         </Grid>
                       ))}
                     </Grid>

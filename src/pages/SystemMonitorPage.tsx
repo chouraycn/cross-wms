@@ -8,8 +8,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   LinearProgress,
   Chip,
@@ -252,8 +250,7 @@ const SystemMonitorPage: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* 插件 */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <ExtensionIcon color="primary" />
                 <Typography variant="body2" color="text.secondary">
@@ -283,14 +280,12 @@ const SystemMonitorPage: React.FC = () => {
                   sx={{ mt: 1 }}
                 />
               )}
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
 
         {/* 扩展 */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <HubIcon color="secondary" />
                 <Typography variant="body2" color="text.secondary">
@@ -311,14 +306,12 @@ const SystemMonitorPage: React.FC = () => {
                   sx={{ height: 6, borderRadius: 3 }}
                 />
               </Box>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
 
         {/* 消息 */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <MessageIcon color="info" />
                 <Typography variant="body2" color="text.secondary">
@@ -351,14 +344,12 @@ const SystemMonitorPage: React.FC = () => {
                   </>
                 )}
               </Box>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
 
         {/* 内存 */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <MemoryIcon color="warning" />
                 <Typography variant="body2" color="text.secondary">
@@ -379,8 +370,7 @@ const SystemMonitorPage: React.FC = () => {
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                 {metrics ? `${formatBytes(metrics.memory.heapUsed)} / ${formatBytes(metrics.memory.heapTotal)}` : ''}
               </Typography>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
       </Grid>
 
@@ -611,8 +601,7 @@ const SystemMonitorPage: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* 平均响应时间 */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <TimerIcon color="primary" />
                 <Typography variant="body2" color="text.secondary">
@@ -641,14 +630,12 @@ const SystemMonitorPage: React.FC = () => {
                   />
                 )}
               </Box>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
 
         {/* 总请求数 */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <AssessmentIcon color="info" />
                 <Typography variant="body2" color="text.secondary">
@@ -661,14 +648,12 @@ const SystemMonitorPage: React.FC = () => {
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                 累计处理请求
               </Typography>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
 
         {/* 错误率 */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <ErrorOutlineIcon color="error" />
                 <Typography variant="body2" color="text.secondary">
@@ -697,8 +682,7 @@ const SystemMonitorPage: React.FC = () => {
                   />
                 )}
               </Box>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
       </Grid>
 

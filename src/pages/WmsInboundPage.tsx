@@ -9,7 +9,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Button,
-  Card,
   Table,
   TableBody,
   TableCell,
@@ -256,7 +255,7 @@ const WmsInboundPage: React.FC = () => {
 
       {/* SOP 风格主卡片 */}
       <Box sx={{ mt: '20px', mb: '16px' }} />
-      <Card elevation={0} sx={{
+      <Box sx={{
         borderRadius: '20px 20px 0 0',
         boxShadow: '0 -4px 16px 0 rgba(0,0,0,0.05)',
         p: '18px 18px 24px 18px',
@@ -385,7 +384,7 @@ const WmsInboundPage: React.FC = () => {
             />
           </>
         )}
-      </Card>
+      </Box>
 
       <WmsInboundFormDialog
         open={formOpen}

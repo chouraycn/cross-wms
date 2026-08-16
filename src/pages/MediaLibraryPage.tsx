@@ -3,8 +3,6 @@ import { showPrompt } from '../utils/confirmDialog';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Button,
   IconButton,
@@ -477,9 +475,12 @@ export default function MediaLibraryPage() {
               <Grid container spacing={2}>
                 {assets.map((asset) => (
                   <Grid item xs={12} sm={6} md={4} key={asset.id}>
-                    <Card
+                    <Box
                       sx={{
                         bgcolor: gs.bgPanel,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 2,
                         display: 'flex',
                         flexDirection: 'column',
                         height: '100%',
@@ -540,7 +541,7 @@ export default function MediaLibraryPage() {
                           </Tooltip>
                         </Stack>
                       </Box>
-                    </Card>
+                    </Box>
                   </Grid>
                 ))}
               </Grid>

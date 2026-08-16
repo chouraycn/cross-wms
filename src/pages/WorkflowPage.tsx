@@ -8,9 +8,6 @@ import { showConfirm } from '../utils/confirmDialog';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
-  CardActions,
   Button,
   IconButton,
   Chip,
@@ -342,8 +339,8 @@ const WorkflowPage: React.FC = () => {
         <Grid container spacing={2}>
           {workflows.map(workflow => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={workflow.id}>
-              <Card>
-                <CardContent>
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="h6">{workflow.name}</Typography>
                     <Chip
@@ -361,8 +358,8 @@ const WorkflowPage: React.FC = () => {
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                     更新时间: {new Date(workflow.updatedAt).toLocaleString()}
                   </Typography>
-                </CardContent>
-                <CardActions>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                   <IconButton size="small" onClick={() => handleOpenEditor(workflow)}>
                     <EditIcon />
                   </IconButton>
@@ -375,8 +372,8 @@ const WorkflowPage: React.FC = () => {
                   <IconButton size="small" onClick={() => handleDelete(workflow.id)}>
                     <DeleteIcon />
                   </IconButton>
-                </CardActions>
-              </Card>
+                </Box>
+              </Box>
             </Grid>
           ))}
         </Grid>
@@ -444,8 +441,8 @@ const WorkflowPage: React.FC = () => {
           <Grid container spacing={2}>
             {templates.map(template => (
               <Grid item xs={12} sm={6} md={4} key={template.id}>
-                <Card>
-                  <CardContent>
+                <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                  <Box>
                     <Typography variant="h6">{template.name}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       {template.description}
@@ -455,8 +452,8 @@ const WorkflowPage: React.FC = () => {
                         <Chip key={tag} label={tag} size="small" />
                       ))}
                     </Box>
-                  </CardContent>
-                  <CardActions>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                     <Button
                       size="small"
                       onClick={() => {
@@ -468,8 +465,8 @@ const WorkflowPage: React.FC = () => {
                     >
                       使用模板
                     </Button>
-                  </CardActions>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
             ))}
           </Grid>

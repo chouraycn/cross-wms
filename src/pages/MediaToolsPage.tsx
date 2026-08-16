@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import {
   Box, Typography, Button, Chip, Paper, Tabs, Tab,
   TextField, CircularProgress, Alert, Divider,
-  Card, CardContent, CardMedia, useTheme,
+  useTheme,
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import LinkIcon from '@mui/icons-material/Link';
@@ -272,17 +272,17 @@ const LinkUnderstandingTab: React.FC = () => {
 
   // 渲染预览卡片
   const renderPreviewCard = (preview: PreviewResponse['preview']) => (
-    <Card sx={{ maxWidth: 500, border: `1px solid ${gs.border}`, backgroundColor: gs.bgPanel }}>
+    <Box sx={{ maxWidth: 500, border: '1px solid', borderColor: 'divider', backgroundColor: gs.bgPanel }}>
       {preview.image && (
-        <CardMedia
+        <Box
           component="img"
-          image={preview.image}
+          src={preview.image}
           alt={preview.title || '预览图'}
           sx={{ maxHeight: 200, objectFit: 'cover' }}
           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
         />
       )}
-      <CardContent>
+      <Box sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
           {preview.icon && (
             <img src={preview.icon} alt="" style={{ width: 16, height: 16 }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -303,8 +303,8 @@ const LinkUnderstandingTab: React.FC = () => {
           {preview.finalUrl || preview.url}
         </Typography>
         <Chip label={preview.cardType} size="small" sx={{ ml: 1 }} />
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 
   // 渲染安全检查结果

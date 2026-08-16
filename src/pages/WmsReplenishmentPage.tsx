@@ -9,7 +9,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
-  Card,
   Typography,
   Grid,
   FormControl,
@@ -222,14 +221,14 @@ const WmsReplenishmentPage: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {statCards.map((card) => (
           <Grid item xs={3} key={card.label}>
-            <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, p: 2 }}>
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Typography variant="body2" sx={{ color: gs.textMuted, fontSize: '0.75rem', mb: 0.5 }}>
                 {card.label}
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 700, color: card.color }}>
                 {card.value}
               </Typography>
-            </Card>
+            </Box>
           </Grid>
         ))}
       </Grid>
@@ -266,8 +265,7 @@ const WmsReplenishmentPage: React.FC = () => {
 
       {/* 底部批量操作栏 */}
       {selectedIds.length > 0 && (
-        <Card
-          elevation={2}
+        <Box
           sx={{
             position: 'fixed',
             bottom: 24,
@@ -280,7 +278,8 @@ const WmsReplenishmentPage: React.FC = () => {
             alignItems: 'center',
             gap: 2,
             borderRadius: 3,
-            border: `1px solid ${gs.border}`,
+            border: '1px solid',
+            borderColor: 'divider',
           }}
         >
           <Typography variant="body2" sx={{ color: gs.textMuted }}>
@@ -306,7 +305,7 @@ const WmsReplenishmentPage: React.FC = () => {
           >
             取消选择
           </Button>
-        </Card>
+        </Box>
       )}
     </Box>
   );

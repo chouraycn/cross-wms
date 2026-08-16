@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Table,
   TableBody,
@@ -169,8 +167,7 @@ const PermissionsPage: React.FC = () => {
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <ShieldIcon color="primary" />
                 <Typography variant="body2" color="text.secondary">
@@ -183,13 +180,11 @@ const PermissionsPage: React.FC = () => {
                   {' '}/ {totalCount} 已授权
                 </Typography>
               </Typography>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <CheckCircleIcon color="success" />
                 <Typography variant="body2" color="text.secondary">
@@ -199,13 +194,11 @@ const PermissionsPage: React.FC = () => {
               <Typography variant="h4" fontWeight={600} color="success">
                 {grantedCount}
               </Typography>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <ErrorOutlineIcon color="error" />
                 <Typography variant="body2" color="text.secondary">
@@ -215,8 +208,7 @@ const PermissionsPage: React.FC = () => {
               <Typography variant="h4" fontWeight={600} color="error">
                 {totalCount - grantedCount}
               </Typography>
-            </CardContent>
-          </Card>
+          </Box>
         </Grid>
       </Grid>
 
