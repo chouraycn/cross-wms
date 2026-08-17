@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Table,
   TableBody,
@@ -382,8 +380,8 @@ const TransitList: React.FC = () => {
       )}
 
       {/* Filters */}
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, mb: 2 }}>
-        <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, mb: 2 }}>
+        <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <SearchInput
               value={searchText}
@@ -430,10 +428,10 @@ const TransitList: React.FC = () => {
               </Button>
             </Box>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
 
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${gs.borderLighter}` }}>
           <Typography variant="body2" color="text.secondary">
             共 {filteredOrders.length} 条记录（点击行展开状态时间轴）
@@ -470,7 +468,7 @@ const TransitList: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
-      </Card>
+      </Box>
 
       {/* Add/Edit Order Dialog */}
       <Dialog

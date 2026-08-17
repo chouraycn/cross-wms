@@ -33,8 +33,6 @@ import {
   DialogContent,
   DialogActions,
   Alert,
-  Card,
-  CardContent,
   Stack,
   Switch,
   FormControlLabel,
@@ -552,8 +550,8 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
         {activeTab === 'control' && (
           <Stack spacing={2}>
             {/* URL 导航 */}
-            <Card sx={{ bgcolor: gs.bgHover, border: `1px solid ${gs.border}` }}>
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, mb: 1, color: gs.textPrimary }}>
                   URL 导航
                 </Typography>
@@ -586,12 +584,12 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
                     导航
                   </Button>
                 </Box>
-              </CardContent>
-            </Card>
+              </Box>
+            </Box>
 
             {/* 操作按钮 */}
-            <Card sx={{ bgcolor: gs.bgHover, border: `1px solid ${gs.border}` }}>
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, mb: 1, color: gs.textPrimary }}>
                   快捷操作
                 </Typography>
@@ -642,12 +640,12 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
                     关闭浏览器
                   </Button>
                 </Box>
-              </CardContent>
-            </Card>
+              </Box>
+            </Box>
 
             {/* 点击元素 */}
-            <Card sx={{ bgcolor: gs.bgHover, border: `1px solid ${gs.border}` }}>
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, mb: 1, color: gs.textPrimary }}>
                   点击元素
                 </Typography>
@@ -682,12 +680,12 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
                 <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 0.5 }}>
                   从「页面快照」tab 获取元素 ref
                 </Typography>
-              </CardContent>
-            </Card>
+              </Box>
+            </Box>
 
             {/* 输入文本 */}
-            <Card sx={{ bgcolor: gs.bgHover, border: `1px solid ${gs.border}` }}>
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Box sx={{ bgcolor: gs.bgHover, border: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, mb: 1, color: gs.textPrimary }}>
                   输入文本
                 </Typography>
@@ -742,8 +740,8 @@ const BrowserControlPanel: React.FC<BrowserControlPanelProps> = ({
                     </Button>
                   </Box>
                 </Stack>
-              </CardContent>
-            </Card>
+              </Box>
+            </Box>
           </Stack>
         )}
 

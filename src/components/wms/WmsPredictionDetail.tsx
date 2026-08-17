@@ -16,8 +16,6 @@ import {
   Divider,
   IconButton,
   Grid,
-  Card,
-  CardContent,
   useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -204,41 +202,38 @@ const WmsPredictionDetail: React.FC<WmsPredictionDetailProps> = ({
             {/* 关键指标卡片 */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
               <Grid item xs={6}>
-                <Card
-                  elevation={0}
-                  sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, backgroundColor: gs.bgPage }}
+                <Box
+                  sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, backgroundColor: gs.bgPage }}
                 >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Typography variant="caption" sx={{ color: gs.textMuted }}>
                       当前库存
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: gs.textPrimary }}>
                       {data.currentStock}
                     </Typography>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
               <Grid item xs={6}>
-                <Card
-                  elevation={0}
-                  sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, backgroundColor: gs.bgPage }}
+                <Box
+                  sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, backgroundColor: gs.bgPage }}
                 >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Typography variant="caption" sx={{ color: gs.textMuted }}>
                       日均消耗 (EMA)
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: gs.textPrimary }}>
                       {data.dailyConsumption.toFixed(1)}
                     </Typography>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
               <Grid item xs={6}>
-                <Card
-                  elevation={0}
-                  sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, backgroundColor: gs.bgPage }}
+                <Box
+                  sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, backgroundColor: gs.bgPage }}
                 >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Typography variant="caption" sx={{ color: gs.textMuted }}>
                       预计{data.daysUntilZero >= 9999 ? '不' : ''}归零天数
                     </Typography>
@@ -253,15 +248,14 @@ const WmsPredictionDetail: React.FC<WmsPredictionDetailProps> = ({
                     >
                       {data.daysUntilZero >= 9999 ? '∞' : data.daysUntilZero}
                     </Typography>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
               <Grid item xs={6}>
-                <Card
-                  elevation={0}
-                  sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, backgroundColor: gs.bgPage }}
+                <Box
+                  sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, backgroundColor: gs.bgPage }}
                 >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Typography variant="caption" sx={{ color: gs.textMuted }}>
                       置信度
                     </Typography>
@@ -279,8 +273,8 @@ const WmsPredictionDetail: React.FC<WmsPredictionDetailProps> = ({
                         />
                       )}
                     </Box>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
             </Grid>
 
@@ -363,16 +357,16 @@ const WmsPredictionDetail: React.FC<WmsPredictionDetailProps> = ({
             </Box>
 
             {/* 预警消息 */}
-            <Card
-              elevation={0}
+            <Box
               sx={{
-                border: `1px solid ${gs.border}`,
+                border: '1px solid',
+                borderColor: 'divider',
                 borderRadius: 2,
                 backgroundColor: gs.bgPage,
                 mb: 2,
               }}
             >
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                   <TrendingDownIcon sx={{ color: '#F97316', fontSize: 18, mt: 0.25 }} />
                   <Box>
@@ -384,20 +378,20 @@ const WmsPredictionDetail: React.FC<WmsPredictionDetailProps> = ({
                     </Typography>
                   </Box>
                 </Box>
-              </CardContent>
-            </Card>
+              </Box>
+            </Box>
 
             {/* 图例说明 */}
-            <Card
-              elevation={0}
+            <Box
               sx={{
-                border: `1px solid ${gs.border}`,
+                border: '1px solid',
+                borderColor: 'divider',
                 borderRadius: 2,
                 backgroundColor: gs.bgPage,
                 mb: 3,
               }}
             >
-              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                 <Typography variant="caption" sx={{ fontWeight: 600, color: gs.textMuted, display: 'block', mb: 1 }}>
                   图例说明
                 </Typography>
@@ -427,8 +421,8 @@ const WmsPredictionDetail: React.FC<WmsPredictionDetailProps> = ({
                     </Box>
                   </Grid>
                 </Grid>
-              </CardContent>
-            </Card>
+              </Box>
+            </Box>
           </>
         ) : null}
       </Box>

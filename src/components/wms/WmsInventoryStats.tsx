@@ -9,7 +9,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { Card, CardContent, Typography, Box, Stack, LinearProgress } from '@mui/material';
+import { Typography, Box, Stack, LinearProgress } from '@mui/material';
 import { InventoryOutlined, PendingOutlined, CheckCircleOutline, TrendingUp } from '@mui/icons-material';
 import type { InventoryCount, InventoryStats } from '../../types/wms';
 
@@ -85,9 +85,8 @@ const WmsInventoryStats = React.memo<WmsInventoryStatsProps>(function WmsInvento
   return (
     <Stack direction="row" spacing={2} sx={{ mb: 3, flexWrap: 'wrap', gap: 2 }}>
       {cards.map((card) => (
-        <Card
+        <Box
           key={card.label}
-          elevation={0}
           sx={{
             flex: '1 1 200px',
             minWidth: 200,
@@ -97,7 +96,7 @@ const WmsInventoryStats = React.memo<WmsInventoryStatsProps>(function WmsInvento
             backgroundColor: card.bgColor,
           }}
         >
-          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Box sx={{ p: 2, '&:last-child': { pb: 2 } }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
               <Box>
                 <Typography variant="body2" sx={{ color: '#6B7280', fontSize: '0.75rem', mb: 0.5 }}>
@@ -128,8 +127,8 @@ const WmsInventoryStats = React.memo<WmsInventoryStatsProps>(function WmsInvento
                 }}
               />
             )}
-          </CardContent>
-        </Card>
+          </Box>
+        </Box>
       ))}
     </Stack>
   );

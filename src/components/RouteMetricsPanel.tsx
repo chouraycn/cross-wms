@@ -13,8 +13,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Chip,
   Table,
@@ -79,16 +77,16 @@ const KpiCard: React.FC<KpiCardProps> = ({ label, value, sub, icon, color }) => 
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   return (
-    <Card sx={{ bgcolor: gs.bgPanel, border: `1px solid ${gs.border}`, borderRadius: 2 }}>
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+    <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+      <Box sx={{ p: 2, '&:last-child': { pb: 2 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <Box sx={{ color, display: 'flex' }}>{icon}</Box>
           <Typography variant="caption" sx={{ color: gs.textMuted, fontWeight: 500 }}>{label}</Typography>
         </Box>
         <Typography variant="h4" sx={{ fontWeight: 700, color: gs.textPrimary, lineHeight: 1.1 }}>{value}</Typography>
         {sub && <Typography variant="body2" sx={{ color: gs.textMuted, mt: 0.5 }}>{sub}</Typography>}
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 
@@ -210,8 +208,8 @@ const RouteMetricsPanel: React.FC = () => {
 
       {/* 命中率进度条 */}
       {summary && summary.total > 0 && (
-        <Card sx={{ bgcolor: gs.bgPanel, border: `1px solid ${gs.border}`, borderRadius: 2 }}>
-          <CardContent sx={{ p: 2 }}>
+        <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+          <Box sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <Typography variant="body2" sx={{ color: gs.textMuted, fontWeight: 500 }}>
                 综合命中率
@@ -238,13 +236,13 @@ const RouteMetricsPanel: React.FC = () => {
                 降级: {summary.miss_fallback}
               </Typography>
             </Box>
-          </CardContent>
-        </Card>
+          </Box>
+        </Box>
       )}
 
       {/* 员工排行表 */}
-      <Card sx={{ bgcolor: gs.bgPanel, border: `1px solid ${gs.border}`, borderRadius: 2 }}>
-        <CardContent sx={{ p: 2 }}>
+      <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: gs.textPrimary }}>
               员工路由命中率排行
@@ -332,13 +330,13 @@ const RouteMetricsPanel: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
 
       {/* 最近降级原因 */}
       {summary && summary.recentMissReasons.length > 0 && (
-        <Card sx={{ bgcolor: gs.bgPanel, border: `1px solid ${gs.border}`, borderRadius: 2 }}>
-          <CardContent sx={{ p: 2 }}>
+        <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+          <Box sx={{ p: 2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, color: gs.textPrimary, mb: 1.5 }}>
               最近降级原因（最近 {summary.recentMissReasons.length} 条）
             </Typography>
@@ -363,8 +361,8 @@ const RouteMetricsPanel: React.FC = () => {
                 </Box>
               ))}
             </Box>
-          </CardContent>
-        </Card>
+          </Box>
+        </Box>
       )}
 
       <Typography variant="caption" sx={{ color: gs.textMuted, textAlign: 'center', mt: 0.5 }}>

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Box, Card, Typography, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Divider, IconButton, Tooltip, Chip, Button,
+  Box, Typography, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Divider, IconButton, Tooltip, Chip, Button,
   useTheme,
 } from '@mui/material';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -114,7 +114,7 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
 
       {/* === 个人文档列表 === */}
       {docLinks.length > 0 && (
-        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
           <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${gs.borderLighter}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>已关联文档（{docLinks.length} 个）</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -174,7 +174,7 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
               </List>
             </Box>
           ))}
-        </Card>
+        </Box>
       )}
 
       <Divider sx={{ my: 3 }} />
@@ -190,7 +190,7 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
 
       {/* === 企业文档列表 === */}
       {wecomDocLinks.length > 0 && (
-        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
           <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${gs.borderLighter}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>企业文档（{wecomDocLinks.length} 个）</Typography>
             <Typography variant="caption" color="text.secondary">点击文档读取内容</Typography>
@@ -254,7 +254,7 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
               </List>
             </Box>
           ))}
-        </Card>
+        </Box>
       )}
     </Box>
   );

@@ -8,8 +8,6 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   IconButton,
   Tooltip,
   Chip,
@@ -222,11 +220,11 @@ const AutomationList: React.FC<AutomationListProps> = ({
             const isExpired = auto.validUntil && new Date(auto.validUntil) < new Date();
 
             return (
-              <Card
+              <Box
                 key={auto.id}
-                elevation={0}
                 sx={{
-                  border: `1px solid ${gs.border}`,
+                  border: '1px solid',
+                  borderColor: 'divider',
                   borderRadius: 2,
                   transition: 'all 0.15s ease',
                   opacity: auto.status === 'PAUSED' ? 0.65 : isExpired ? 0.5 : 1,
@@ -240,7 +238,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                   },
                 }}
               >
-                <CardContent sx={{ py: 1.25, px: 2, '&:last-child': { pb: 1.25 } }}>
+                <Box sx={{ py: 1.25, px: 2, '&:last-child': { pb: 1.25 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     {/* 图标 */}
                     <Box
@@ -418,8 +416,8 @@ const AutomationList: React.FC<AutomationListProps> = ({
                       )}
                     </Box>
                   </Collapse>
-                </CardContent>
-              </Card>
+                </Box>
+              </Box>
             );
           })}
         </Box>

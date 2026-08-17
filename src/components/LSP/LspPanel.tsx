@@ -17,8 +17,6 @@ import {
   Divider,
   TextField,
   Grid,
-  Card,
-  CardContent,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
@@ -226,18 +224,19 @@ const LspServerCard: React.FC<LspServerCardProps> = ({ server, instance, onStart
   };
 
   return (
-    <Card
+    <Box
       sx={{
         mb: 1.5,
         borderRadius: 2,
-        border: `1px solid ${status === 'running' ? 'rgba(34,197,94,0.3)' : gs.border}`,
+        border: '1px solid',
+        borderColor: status === 'running' ? 'rgba(34,197,94,0.3)' : 'divider',
         backgroundColor: status === 'running'
           ? (isDark ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.03)')
           : gs.bgPanel,
         transition: 'all 0.15s ease',
       }}
     >
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+      <Box sx={{ p: 2, '&:last-child': { pb: 2 } }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {STATUS_ICON_MAP[status]}
@@ -383,8 +382,8 @@ const LspServerCard: React.FC<LspServerCardProps> = ({ server, instance, onStart
             </Box>
           </Box>
         </Collapse>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

@@ -1,7 +1,5 @@
 import React from 'react';
 import {
-  Card,
-  CardContent,
   Typography,
   Select,
   MenuItem,
@@ -24,15 +22,16 @@ interface ChainNodeCardProps {
 
 const ChainNodeCard: React.FC<ChainNodeCardProps> = ({ node, index, onUpdate, onDelete }) => {
   return (
-    <Card
+    <Box
       sx={{
         mb: 1,
-        border: '1px solid #E5E7EB',
+        border: '1px solid',
+        borderColor: 'divider',
         boxShadow: 'none',
         '&:hover': { borderColor: '#2563EB' },
       }}
     >
-      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+      <Box sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <DragIndicatorIcon sx={{ color: '#D1D5DB', fontSize: 20, cursor: 'grab' }} />
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -75,8 +74,8 @@ const ChainNodeCard: React.FC<ChainNodeCardProps> = ({ node, index, onUpdate, on
             onChange={(e) => onUpdate({ ...node, retryCount: Number(e.target.value) })}
           />
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

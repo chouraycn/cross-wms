@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Card, CardContent, CardHeader, Typography, Box, CircularProgress, Alert } from '@mui/material';
+import { Typography, Box, CircularProgress, Alert } from '@mui/material';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
@@ -72,54 +72,52 @@ const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_W
   // 加载状态
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
               运单时效分析
             </Typography>
-          }
-        />
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
           <CircularProgress size={30} sx={{ color: '#111827' }} />
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   // 错误状态
   if (error) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
               {warehouseName ? `${warehouseName}运单时效分析` : '运单时效分析'}
             </Typography>
-          }
-        />
-        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, pt: 0, pb: 2 }}>
           <Alert severity="error">{error}</Alert>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-      <CardHeader
-        title={
-          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
-            {warehouseName ? `${warehouseName}运单时效分析` : '运单时效分析'}
-          </Typography>
-        }
-        subheader={
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
-            基于发货日期统计运输时长分布
-          </Typography>
-        }
-      />
-      <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              {warehouseName ? `${warehouseName}运单时效分析` : '运单时效分析'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
+              基于发货日期统计运输时长分布
+            </Typography>
+          </Box>
+        </Box>
+      <Box sx={{ p: 2, pt: 0, pb: 2 }}>
         {chartData.every((d) => d.count === 0) ? (
           <Box sx={{ py: 6, textAlign: 'center' }}>
             <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
@@ -152,8 +150,8 @@ const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_W
             </BarChart>
           </ResponsiveContainer>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

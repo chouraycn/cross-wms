@@ -17,8 +17,6 @@ import { showConfirm } from '../../utils/confirmDialog';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   Chip,
   Table,
@@ -225,8 +223,8 @@ const CronPanel: React.FC = () => {
         </Alert>
       )}
 
-      <Card sx={{ bgcolor: gs.bgPanel }}>
-        <CardContent>
+      <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <ScheduleIcon color="primary" />
@@ -319,15 +317,15 @@ const CronPanel: React.FC = () => {
               </Table>
             </TableContainer>
           )}
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     </Box>
   );
 
   const renderParserTab = () => (
     <Box>
-      <Card sx={{ bgcolor: gs.bgPanel }}>
-        <CardContent>
+      <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <TerminalIcon color="primary" />
             <Typography variant="h6">Cron 表达式解析</Typography>
@@ -404,15 +402,15 @@ const CronPanel: React.FC = () => {
               />
             ))}
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     </Box>
   );
 
   const renderLogsTab = () => (
     <Box>
-      <Card sx={{ bgcolor: gs.bgPanel }}>
-        <CardContent>
+      <Box sx={{ bgcolor: gs.bgPanel, border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+        <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <VisibilityIcon color="primary" />
             <Typography variant="h6">最近执行日志</Typography>
@@ -467,8 +465,8 @@ const CronPanel: React.FC = () => {
               </Table>
             </TableContainer>
           )}
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     </Box>
   );
 

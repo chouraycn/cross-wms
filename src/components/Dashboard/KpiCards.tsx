@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Grid, Card, CardContent, Typography, Box, IconButton, CircularProgress, Alert, useTheme } from '@mui/material';
+import { Grid, Typography, Box, IconButton, CircularProgress, Alert, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getGrayScale } from '../../constants/theme';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -48,13 +48,12 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, unit, icon, theme, tren
   const cardIsDark = cardTheme.palette.mode === 'dark';
   const cgs = getGrayScale(cardIsDark);
   return (
-    <Card
-      elevation={0}
-      onClick={navigateTo ? undefined : undefined}
+    <Box
       sx={{
-        border: `1px solid ${cgs.border}`,
+        border: '1px solid',
+        borderColor: 'divider',
         borderLeft: `3px solid ${theme.border}`,
-        borderRadius: '6px',
+        borderRadius: 2,
         cursor: navigateTo ? 'pointer' : 'default',
         transition: 'transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
         '&:hover': navigateTo
@@ -69,7 +68,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, unit, icon, theme, tren
             },
       }}
     >
-      <CardContent sx={{ p: '16px 20px' }}>
+      <Box sx={{ p: '16px 20px' }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <Box sx={{ flex: 1, pr: 1 }}>
             <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: cgs.textMuted, mb: 0.5, lineHeight: 1.3 }}>
@@ -105,8 +104,8 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, unit, icon, theme, tren
             {icon}
           </Box>
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

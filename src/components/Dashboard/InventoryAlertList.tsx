@@ -1,8 +1,5 @@
 import React, { useMemo, useState, useEffect, memo } from 'react';
 import {
-  Card,
-  CardContent,
-  CardHeader,
   Typography,
   Box,
   Table,
@@ -133,48 +130,46 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
 
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, height: '100%' }}>
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
           <CircularProgress size={30} sx={{ color: gs.textPrimary }} />
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, height: '100%' }}>
-        <CardContent>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2 }}>
           <Alert severity="error">{error}</Alert>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, height: '100%' }}>
-      <CardHeader
-        title={
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: (totalCount + predictionAlerts.length) > 0 ? 'space-between' : 'flex-start', gap: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
             库存预警列表
           </Typography>
-        }
-        subheader={
           <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, mt: 0.25 }}>
             库龄 ≥ {ageWarningDays} 天的 SKU
           </Typography>
-        }
-        action={
-          (totalCount + predictionAlerts.length) > 0 ? (
+        </Box>
+        {(totalCount + predictionAlerts.length) > 0 && (
+          <Box sx={{ flexShrink: 0 }}>
             <Chip
               label={`${totalCount + predictionAlerts.length} 条预警`}
               size="small"
               sx={{ backgroundColor: isDark ? '#7F1D1D' : '#FEF2F2', color: '#EF4444', fontSize: '0.75rem', height: 24 }}
             />
-          ) : undefined
-        }
-      />
-      <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          </Box>
+        )}
+      </Box>
+      <Box sx={{ p: 2, pt: 0, pb: 2 }}>
         {/* 预测型预警区域 */}
         {predictionAlerts.length > 0 && (
           <Box sx={{ mb: 2 }}>
@@ -356,8 +351,8 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
             )}
           </Box>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

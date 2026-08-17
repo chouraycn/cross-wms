@@ -1,8 +1,6 @@
 import React, { useState, useEffect, memo } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Table,
   TableBody,
@@ -148,26 +146,26 @@ const InventoryList: React.FC = () => {
 
       {/* Summary + Aging Distribution */}
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
           <Typography variant="caption" color="text.secondary">SKU总数</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>{enrichedItems.length}</Typography>
-        </Card>
-        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
+        </Box>
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
           <Typography variant="caption" color="text.secondary">占用容积</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalVolume.toFixed(0)} m³</Typography>
-        </Card>
-        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
+        </Box>
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
           <Typography variant="caption" color="text.secondary">货值合计</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>${(totalValue / 1000).toFixed(0)}K</Typography>
-        </Card>
+        </Box>
         {ageWarningCount > 0 && (
-          <Card elevation={0} sx={{ border: '1px solid #ff9800', borderRadius: 2, px: 2, py: 1.5, minWidth: 160, backgroundColor: '#fff8e1' }}>
+          <Box sx={{ border: '1px solid', borderColor: '#ff9800', borderRadius: 2, px: 2, py: 1.5, minWidth: 160, backgroundColor: '#fff8e1' }}>
             <Typography variant="caption" sx={{ color: '#e65100' }}>库龄警告（&gt;{ageWarningDays}天）</Typography>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#e65100' }}>{ageWarningCount} 件</Typography>
-          </Card>
+          </Box>
         )}
         {/* 库龄分布条 */}
-        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, px: 2, py: 1.5, flex: 1, minWidth: 320 }}>
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, px: 2, py: 1.5, flex: 1, minWidth: 320 }}>
           <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>库龄分布</Typography>
           <Box sx={{ display: 'flex', gap: 0, height: 32, borderRadius: 1.5, overflow: 'hidden' }}>
             {agingStats.map((bucket) => (
@@ -206,12 +204,12 @@ const InventoryList: React.FC = () => {
               </Box>
             ))}
           </Box>
-        </Card>
+        </Box>
       </Box>
 
       {/* Filters & Actions */}
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, mb: 2 }}>
-        <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, mb: 2 }}>
+        <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <SearchInput
               value={searchText}
@@ -256,10 +254,10 @@ const InventoryList: React.FC = () => {
               </Box>
             )}
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
 
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <TableContainer>
           <Table size="small">
             <TableHead>
@@ -354,7 +352,7 @@ const InventoryList: React.FC = () => {
           labelRowsPerPage="每页行数："
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} / 共 ${count} 条`}
         />
-      </Card>
+      </Box>
 
       {/* Move Dialog */}
       <Dialog

@@ -1,8 +1,5 @@
 import React, { useMemo } from 'react';
 import {
-  Card,
-  CardContent,
-  CardHeader,
   Typography,
   Box,
   Table,
@@ -123,75 +120,73 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
   // 加载状态
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, height: '100%' }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               各仓库KPI对比
             </Typography>
-          }
-        />
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
           <CircularProgress size={30} sx={{ color: gs.textPrimary }} />
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   // 错误状态
   if (error) {
     return (
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, height: '100%' }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               各仓库KPI对比
             </Typography>
-          }
-        />
-        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, pt: 0, pb: 2 }}>
           <Alert severity="error">{error}</Alert>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   if (filteredWarehouses.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               各仓库KPI对比
             </Typography>
-          }
-        />
-        <CardContent>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2 }}>
           <Box sx={{ py: 6, textAlign: 'center' }}>
             <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
               暂无仓库数据
             </Typography>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, height: '100%' }}>
-      <CardHeader
-        title={
-          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
-            各仓库KPI对比
-          </Typography>
-        }
-        subheader={
-          <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, mt: 0.25 }}>
-            横向对比所有仓库核心指标
-          </Typography>
-        }
-      />
-      <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
+              各仓库KPI对比
+            </Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, mt: 0.25 }}>
+              横向对比所有仓库核心指标
+            </Typography>
+          </Box>
+        </Box>
+      <Box sx={{ p: 2, pt: 0, pb: 2 }}>
         <TableContainer
           component={Paper}
           elevation={0}
@@ -290,8 +285,8 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
             </TableBody>
           </Table>
         </TableContainer>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, Typography, Box, IconButton, CircularProgress, Alert } from '@mui/material';
+import { Typography, Box, IconButton, CircularProgress, Alert } from '@mui/material';
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
@@ -35,44 +35,42 @@ const TransitPieChart: React.FC<TransitPieChartProps> = ({ timeRange }) => {
 
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 220 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 220 }}>
           <CircularProgress size={30} sx={{ color: '#111827' }} />
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-        <CardContent>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2 }}>
           <Alert severity="error">{error}</Alert>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-      <CardHeader
-        title={
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
             在途货物状态分布
           </Typography>
-        }
-        subheader={
           <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
             共 {total} 单在途运单
           </Typography>
-        }
-        action={
+        </Box>
+        <Box sx={{ flexShrink: 0 }}>
           <IconButton size="small" onClick={handleExport} title="导出CSV">
             <DownloadOutlinedIcon fontSize="small" />
           </IconButton>
-        }
-      />
-      <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+        </Box>
+      </Box>
+      <Box sx={{ p: 2, pt: 0, pb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
@@ -100,8 +98,8 @@ const TransitPieChart: React.FC<TransitPieChartProps> = ({ timeRange }) => {
             </PieChart>
           </ResponsiveContainer>
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

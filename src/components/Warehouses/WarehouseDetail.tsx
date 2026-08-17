@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Grid,
   Chip,
@@ -167,8 +165,8 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
       </Button>
 
       {/* Header Card */}
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, mb: 3 }}>
-        <CardContent>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, mb: 3 }}>
+        <Box>
           <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} md={6}>
               <Typography variant="h5" sx={{ fontWeight: 700, color: gs.textPrimary, mb: 1 }}>
@@ -219,11 +217,11 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
               </Box>
             </Grid>
           </Grid>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
 
       {/* Tabs */}
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <Box sx={{ borderBottom: `1px solid ${gs.borderLighter}`, px: 2 }}>
           <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} textColor="primary" indicatorColor="primary">
             <Tab label={`入库记录 (${inboundRecords.length})`} />
@@ -231,7 +229,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
             <Tab label={`库存列表 (${inventory.length})`} />
           </Tabs>
         </Box>
-        <CardContent>
+        <Box>
           <TabPanel value={tabValue} index={0}>
             <TableContainer>
               <Table size="small">
@@ -346,8 +344,8 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
               </Typography>
             )}
           </TabPanel>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     </Box>
   );
 };

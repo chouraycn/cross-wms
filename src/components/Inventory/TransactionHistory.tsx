@@ -8,7 +8,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Card,
   Table,
   TableBody,
   TableCell,
@@ -137,7 +136,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ warehouseId, sk
   return (
     <Box>
       {/* 筛选栏 */}
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, mb: 2, p: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, mb: 2, p: 2 }}>
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>变动类型</InputLabel>
@@ -192,10 +191,10 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ warehouseId, sk
             sx={{ minWidth: 150 }}
           />
         </Stack>
-      </Card>
+      </Box>
 
       {/* 数据表格 */}
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress size={28} />
@@ -317,7 +316,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ warehouseId, sk
             />
           </>
         )}
-      </Card>
+      </Box>
     </Box>
   );
 };

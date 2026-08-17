@@ -20,7 +20,6 @@ import {
   Checkbox,
   IconButton,
   Collapse,
-  Card,
   TablePagination,
   Tooltip,
 } from '@mui/material';
@@ -121,26 +120,26 @@ const WmsReplenishmentList: React.FC<WmsReplenishmentListProps> = ({
 
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
           <Typography variant="body2" color="text.secondary">正在加载数据...</Typography>
         </Box>
-      </Card>
+      </Box>
     );
   }
 
   if (items.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
           <Typography variant="body2" color="text.secondary">暂无补货建议，点击「生成建议」开始</Typography>
         </Box>
-      </Card>
+      </Box>
     );
   }
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
       <TableContainer>
         <Table size="small">
           <TableHead>
@@ -301,7 +300,7 @@ const WmsReplenishmentList: React.FC<WmsReplenishmentListProps> = ({
         labelRowsPerPage="每页行数："
         labelDisplayedRows={({ from, to, count }) => `${from}-${to} / 共 ${count} 条`}
       />
-    </Card>
+    </Box>
   );
 };
 

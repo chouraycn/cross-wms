@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Card,
   Typography,
   Table,
   TableBody,
@@ -203,7 +202,7 @@ const WarehouseList: React.FC = () => {
       {warehouses.length === 0 ? (
           <EmptyWarehouseState onAddWarehouse={handleOpenDialog} />
         ) : (
-        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, overflow: 'hidden' }}>
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
         <TableContainer>
           <Table>
             <TableHead>
@@ -289,7 +288,7 @@ const WarehouseList: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
-        </Card>
+        </Box>
         )}
 
       {/* New Warehouse Dialog */}

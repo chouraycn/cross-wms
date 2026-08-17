@@ -9,8 +9,6 @@
 
 import React, { useMemo } from 'react';
 import {
-  Card,
-  CardContent,
   Typography,
   Box,
   FormControl,
@@ -156,22 +154,22 @@ const WmsVarianceChart: React.FC<WmsVarianceChartProps> = ({
 
   if (chartData.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
-        <CardContent sx={{ p: 3, textAlign: 'center' }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Box sx={{ p: 3, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             暂无差异数据
           </Typography>
           <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5, fontSize: '0.75rem' }}>
             完成盘点并确认调整后，此处将显示差异趋势
           </Typography>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
-      <CardContent sx={{ p: 3 }}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+      <Box sx={{ p: 3 }}>
         {/* 标题栏 */}
         <Stack
           direction="row"
@@ -340,8 +338,8 @@ const WmsVarianceChart: React.FC<WmsVarianceChartProps> = ({
         >
           {chartType === 'trend' ? '显示差异金额变化趋势' : '显示盘盈/盘亏次数分布'}
         </Typography>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

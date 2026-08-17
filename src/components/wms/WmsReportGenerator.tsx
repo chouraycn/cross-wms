@@ -9,8 +9,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Button,
   TextField,
   FormControl,
@@ -106,8 +104,8 @@ const WmsReportGenerator: React.FC<WmsReportGeneratorProps> = ({
   return (
     <Box>
       {/* 生成报表表单 */}
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, mb: 3 }}>
-        <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, mb: 3 }}>
+        <Box sx={{ py: 2, '&:last-child': { pb: 2 } }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#111827' }}>
             生成新报表
           </Typography>
@@ -189,14 +187,14 @@ const WmsReportGenerator: React.FC<WmsReportGeneratorProps> = ({
               </Button>
             </Stack>
           </Stack>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
 
       {/* 历史记录 */}
       <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#111827' }}>
         历史记录
       </Typography>
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <Typography variant="body2" color="text.secondary">正在加载报表历史...</Typography>
@@ -313,7 +311,7 @@ const WmsReportGenerator: React.FC<WmsReportGeneratorProps> = ({
             />
           </>
         )}
-      </Card>
+      </Box>
     </Box>
   );
 };

@@ -8,8 +8,6 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   IconButton,
   Tooltip,
   Chip,
@@ -162,11 +160,11 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
             const autoName = autoNameMap[log.automationId] || '未知任务';
 
             return (
-              <Card
+              <Box
                 key={log.id}
-                elevation={0}
                 sx={{
-                  border: `1px solid ${gs.border}`,
+                  border: '1px solid',
+                  borderColor: 'divider',
                   borderRadius: 1.5,
                   transition: 'all 0.15s ease',
                   cursor: 'pointer',
@@ -177,7 +175,7 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
                 }}
                 onClick={() => onViewDetail(log)}
               >
-                <CardContent sx={{ py: 1, px: 2, '&:last-child': { pb: 1 } }}>
+                <Box sx={{ py: 1, px: 2, '&:last-child': { pb: 1 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     {/* 状态图标 */}
                     <Box
@@ -277,8 +275,8 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
                       </Box>
                     </Box>
                   </Box>
-                </CardContent>
-              </Card>
+                </Box>
+              </Box>
             );
           })}
         </Box>

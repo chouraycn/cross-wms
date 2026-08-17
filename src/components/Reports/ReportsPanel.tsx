@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
-  CardHeader,
   Typography,
   Grid,
   ToggleButton,
@@ -187,10 +184,10 @@ const ReportsPanel: React.FC = () => {
       <Grid container spacing={2}>
         {/* Monthly Inbound/Outbound Trend */}
         <Grid item xs={12} lg={7}>
-          <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2 }}>
-            <CardHeader
-              title={<Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>月度入出库趋势（件）</Typography>}
-              action={
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>月度入出库趋势（件）</Typography>
+              <Box sx={{ flexShrink: 0 }}>
                 <Button
                   size="small"
                   startIcon={<DownloadIcon />}
@@ -199,9 +196,9 @@ const ReportsPanel: React.FC = () => {
                 >
                   导出CSV
                 </Button>
-              }
-            />
-            <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+              </Box>
+            </Box>
+            <Box sx={{ pt: 0, pb: '16px !important' }}>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -213,16 +210,16 @@ const ReportsPanel: React.FC = () => {
                   <Bar dataKey="出库" fill="#90caf9" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </Box>
         </Grid>
 
         {/* Warehouse Volume */}
         <Grid item xs={12} lg={5}>
-          <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2 }}>
-            <CardHeader
-              title={<Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>各仓库容积分析（m³）</Typography>}
-              action={
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>各仓库容积分析（m³）</Typography>
+              <Box sx={{ flexShrink: 0 }}>
                 <Button
                   size="small"
                   startIcon={<DownloadIcon />}
@@ -231,9 +228,9 @@ const ReportsPanel: React.FC = () => {
                 >
                   导出CSV
                 </Button>
-              }
-            />
-            <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+              </Box>
+            </Box>
+            <Box sx={{ pt: 0, pb: '16px !important' }}>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={warehouseVolumeData} layout="vertical" margin={{ top: 5, right: 20, left: 50, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -245,16 +242,16 @@ const ReportsPanel: React.FC = () => {
                   <Bar dataKey="空闲容积" stackId="a" fill="#F3F4F6" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </Box>
         </Grid>
 
         {/* Category Volume */}
         <Grid item xs={12} lg={5}>
-          <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2 }}>
-            <CardHeader
-              title={<Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>按品类容积占用（m³）</Typography>}
-              action={
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>按品类容积占用（m³）</Typography>
+              <Box sx={{ flexShrink: 0 }}>
                 <Button
                   size="small"
                   startIcon={<DownloadIcon />}
@@ -263,9 +260,9 @@ const ReportsPanel: React.FC = () => {
                 >
                   导出CSV
                 </Button>
-              }
-            />
-            <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+              </Box>
+            </Box>
+            <Box sx={{ pt: 0, pb: '16px !important' }}>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={categoryChartData} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -275,16 +272,16 @@ const ReportsPanel: React.FC = () => {
                   <Bar dataKey="volume" fill="#374151" radius={[0, 4, 4, 0]} name="占用容积(m³)" />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </Box>
         </Grid>
 
         {/* Transit Efficiency */}
         <Grid item xs={12} lg={7}>
-          <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2 }}>
-            <CardHeader
-              title={<Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>在途时效分析</Typography>}
-              action={
+          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>在途时效分析</Typography>
+              <Box sx={{ flexShrink: 0 }}>
                 <Button
                   size="small"
                   startIcon={<DownloadIcon />}
@@ -293,9 +290,9 @@ const ReportsPanel: React.FC = () => {
                 >
                   导出CSV
                 </Button>
-              }
-            />
-            <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+              </Box>
+            </Box>
+            <Box sx={{ pt: 0, pb: '16px !important' }}>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={transitEfficiencyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -314,8 +311,8 @@ const ReportsPanel: React.FC = () => {
                   <Line yAxisId="right" type="monotone" dataKey="onTimeRate" stroke="#4caf50" strokeWidth={2} dot={{ r: 4 }} name="准时率%" />
                 </LineChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </Box>
         </Grid>
       </Grid>
     </Box>

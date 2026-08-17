@@ -8,8 +8,6 @@
 import React from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -118,28 +116,28 @@ const WmsAlertList: React.FC<WmsAlertListProps> = ({ alerts, loading, onResolve,
     <Box>
       {/* 统计概要 */}
       {activeCount > 0 && (
-        <Card
-          elevation={0}
+        <Box
           sx={{
-            border: '1px solid #FCA5A5',
+            border: '1px solid',
+            borderColor: '#FCA5A5',
             borderRadius: 2,
             mb: 2,
             backgroundColor: '#FEF2F2',
           }}
         >
-          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+          <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <NotificationsActiveIcon sx={{ color: '#DC2626', fontSize: 20 }} />
               <Typography variant="body2" sx={{ fontWeight: 600, color: '#991B1B' }}>
                 当前 {activeCount} 条活跃预警
               </Typography>
             </Box>
-          </CardContent>
-        </Card>
+          </Box>
+        </Box>
       )}
 
       {/* 预警表格 */}
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <Typography variant="body2" color="text.secondary">正在加载预警数据...</Typography>
@@ -292,7 +290,7 @@ const WmsAlertList: React.FC<WmsAlertListProps> = ({ alerts, loading, onResolve,
             />
           </>
         )}
-      </Card>
+      </Box>
     </Box>
   );
 };

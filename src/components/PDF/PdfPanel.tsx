@@ -27,8 +27,6 @@ import {
   IconButton,
   Tabs,
   Tab,
-  Card,
-  CardContent,
   List,
   ListItem,
   ListItemText,
@@ -667,8 +665,8 @@ const PdfPanel: React.FC = () => {
             </Alert>
 
             {result.data && (
-              <Card variant="outlined">
-                <CardContent>
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Box sx={{ p: 2 }}>
                   <Typography variant="body2" color="text.secondary">
                     文件路径: {result.data.path}
                   </Typography>
@@ -686,8 +684,8 @@ const PdfPanel: React.FC = () => {
                       ))}
                     </List>
                   )}
-                </CardContent>
-              </Card>
+                </Box>
+              </Box>
             )}
 
             <Button

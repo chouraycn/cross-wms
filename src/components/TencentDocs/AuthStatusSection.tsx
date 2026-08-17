@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Card, CardContent, Typography, Button, Chip, Alert, useTheme } from '@mui/material';
+import { Box, Typography, Button, Chip, Alert, useTheme } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import LinkIcon from '@mui/icons-material/Link';
 import AddIcon from '@mui/icons-material/Add';
@@ -82,8 +82,8 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
     <Box>
       {/* v1.9.5-fix: 移除 @keyframes spin，已用 JS 定时器替代 */}
       {/* === 个人文档品牌卡片 === */}
-      <Card elevation={0} sx={{ border: `2px solid ${TDOC_COLOR}`, borderRadius: 2, mb: 3 }}>
-        <CardContent>
+      <Box sx={{ border: '1px solid', borderColor: TDOC_COLOR, borderRadius: 2, mb: 3 }}>
+        <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Box sx={{ width: 52, height: 52, borderRadius: 2, backgroundColor: TDOC_COLOR, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <DescriptionIcon sx={{ color: '#fff', fontSize: 30 }} />
@@ -113,8 +113,8 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
               </Button>
             </Box>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
 
       {/* 未授权提示 */}
       {authStatus && !authStatus.authenticated && (
@@ -124,8 +124,8 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
       )}
 
       {/* === 企业文档品牌卡片 === */}
-      <Card elevation={0} sx={{ border: `2px solid ${WECOM_COLOR}`, borderRadius: 2, mb: 3 }}>
-        <CardContent>
+      <Box sx={{ border: '1px solid', borderColor: WECOM_COLOR, borderRadius: 2, mb: 3 }}>
+        <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Box sx={{ width: 52, height: 52, borderRadius: 2, backgroundColor: WECOM_COLOR, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <DescriptionIcon sx={{ color: '#fff', fontSize: 30 }} />
@@ -155,8 +155,8 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
               </Button>
             </Box>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
 
       {/* 企业微信未授权提示 */}
       {wecomAuthStatus && !wecomAuthStatus.cliInstalled && (

@@ -8,8 +8,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Button,
   CircularProgress,
@@ -65,10 +63,10 @@ const WmsPredictionDashboard: React.FC<WmsPredictionDashboardProps> = ({
   const toggleCollapse = () => setCollapsed((prev) => !prev);
 
   return (
-    <Card
-      elevation={0}
+    <Box
       sx={{
-        border: `1px solid ${gs.border}`,
+        border: '1px solid',
+        borderColor: 'divider',
         borderRadius: 2,
         mb: 3,
         borderLeft: '3px solid #6366F1',
@@ -128,7 +126,7 @@ const WmsPredictionDashboard: React.FC<WmsPredictionDashboardProps> = ({
 
       {/* Content */}
       <Collapse in={!collapsed}>
-        <CardContent sx={{ pt: 2, pb: '16px !important' }}>
+        <Box sx={{ pt: 2, pb: '16px !important' }}>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
               <CircularProgress size={24} sx={{ color: '#6366F1' }} />
@@ -146,15 +144,15 @@ const WmsPredictionDashboard: React.FC<WmsPredictionDashboardProps> = ({
             <Grid container spacing={2}>
               {/* 预测短缺数 */}
               <Grid item xs={12} sm={6} md={3}>
-                <Card
-                  elevation={0}
-                  sx={{
-                    border: '1px solid #FED7AA',
-                    borderRadius: 2,
-                    backgroundColor: '#FFF7ED',
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: '#FED7AA',
+                  borderRadius: 2,
+                  backgroundColor: '#FFF7ED',
+                }}
+              >
+                  <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                       <TrendingDownIcon sx={{ color: '#F97316', fontSize: 18 }} />
                       <Typography variant="caption" sx={{ color: '#9A3412', fontWeight: 500 }}>
@@ -167,21 +165,21 @@ const WmsPredictionDashboard: React.FC<WmsPredictionDashboardProps> = ({
                     <Typography variant="caption" sx={{ color: gs.textDisabled }}>
                       活跃预警
                     </Typography>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
 
               {/* 预测积压数 */}
               <Grid item xs={12} sm={6} md={3}>
-                <Card
-                  elevation={0}
-                  sx={{
-                    border: '1px solid #C7D2FE',
-                    borderRadius: 2,
-                    backgroundColor: '#EEF2FF',
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: '#C7D2FE',
+                  borderRadius: 2,
+                  backgroundColor: '#EEF2FF',
+                }}
+              >
+                  <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                       <InventoryIcon sx={{ color: '#6366F1', fontSize: 18 }} />
                       <Typography variant="caption" sx={{ color: '#3730A3', fontWeight: 500 }}>
@@ -194,21 +192,21 @@ const WmsPredictionDashboard: React.FC<WmsPredictionDashboardProps> = ({
                     <Typography variant="caption" sx={{ color: gs.textDisabled }}>
                       活跃预警
                     </Typography>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
 
               {/* 待补货 SKU 数 */}
               <Grid item xs={12} sm={6} md={3}>
-                <Card
-                  elevation={0}
-                  sx={{
-                    border: `1px solid ${gs.border}`,
-                    borderRadius: 2,
-                    backgroundColor: gs.bgPanel,
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  backgroundColor: gs.bgPanel,
+                }}
+              >
+                  <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                       <AssessmentIcon sx={{ color: gs.textMuted, fontSize: 18 }} />
                       <Typography variant="caption" sx={{ color: gs.textSecondary, fontWeight: 500 }}>
@@ -221,21 +219,21 @@ const WmsPredictionDashboard: React.FC<WmsPredictionDashboardProps> = ({
                     <Typography variant="caption" sx={{ color: gs.textDisabled }}>
                       需采购/调拨
                     </Typography>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
 
               {/* 数据覆盖率 */}
               <Grid item xs={12} sm={6} md={3}>
-                <Card
-                  elevation={0}
-                  sx={{
-                    border: `1px solid ${gs.border}`,
-                    borderRadius: 2,
-                    backgroundColor: gs.bgPanel,
-                  }}
-                >
-                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  backgroundColor: gs.bgPanel,
+                }}
+              >
+                  <Box sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                       <AutoGraphIcon sx={{ color: gs.textMuted, fontSize: 18 }} />
                       <Typography variant="caption" sx={{ color: gs.textSecondary, fontWeight: 500 }}>
@@ -248,14 +246,14 @@ const WmsPredictionDashboard: React.FC<WmsPredictionDashboardProps> = ({
                     <Typography variant="caption" sx={{ color: gs.textDisabled }}>
                       有充足历史的 SKU 占比
                     </Typography>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               </Grid>
             </Grid>
           )}
-        </CardContent>
+        </Box>
       </Collapse>
-    </Card>
+    </Box>
   );
 };
 

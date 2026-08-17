@@ -41,8 +41,6 @@ import {
   FormControl,
   InputLabel,
   Grid,
-  Card,
-  CardContent,
   LinearProgress,
   Accordion,
   AccordionSummary,
@@ -820,8 +818,8 @@ const EventLedgerPanel: React.FC = () => {
           {selectedEvent && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* 基本信息 */}
-              <Card variant="outlined">
-                <CardContent>
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Box sx={{ p: 2 }}>
                   <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, mb: 1 }}>
                     基本信息
                   </Typography>
@@ -879,13 +877,13 @@ const EventLedgerPanel: React.FC = () => {
                       </Grid>
                     )}
                   </Grid>
-                </CardContent>
-              </Card>
+                </Box>
+              </Box>
 
               {/* Payload */}
               {selectedEvent.payload && Object.keys(selectedEvent.payload).length > 0 && (
-                <Card variant="outlined">
-                  <CardContent>
+                <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                  <Box sx={{ p: 2 }}>
                     <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, mb: 1 }}>
                       Payload
                     </Typography>
@@ -909,8 +907,8 @@ const EventLedgerPanel: React.FC = () => {
                         {JSON.stringify(selectedEvent.payload, null, 2)}
                       </pre>
                     </Box>
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               )}
             </Box>
           )}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { Box, Typography, Card, CardHeader, CardContent, CircularProgress, Alert, Paper, useTheme } from '@mui/material';
+import { Box, Typography, CircularProgress, Alert, Paper, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
 import { useDashboardSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
@@ -247,22 +247,22 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   // 加载状态
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
           <CircularProgress size={30} sx={{ color: gs.textPrimary }} />
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   // 错误状态
   if (error) {
     return (
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
-        <CardContent>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Box sx={{ p: 2 }}>
           <Alert severity="error">{error}</Alert>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
@@ -281,20 +281,18 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   // 没有仓库时显示空状态
   if (warehouses.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               出货日历热力图
             </Typography>
-          }
-          subheader={
             <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
               近 {days} 天 · GitHub 风格
             </Typography>
-          }
-        />
-        <CardContent>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2 }}>
           <Box sx={{ py: 6, textAlign: 'center' }}>
             <Typography sx={{ fontSize: '0.875rem', color: gs.textDisabled, mb: 1 }}>
               暂无仓库数据，请先添加仓库
@@ -303,35 +301,32 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
               热力图将展示每日出货趋势
             </Typography>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
-      <CardHeader
-        title={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
-              出货日历热力图
-            </Typography>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Box sx={{ p: 2, pb: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
+                出货日历热力图
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
+                {warehouseId === ALL_WAREHOUSES
+                  ? `全部 ${whCount} 个仓库 · 共 ${totalShipments} 件`
+                  : `${warehouses.find(w => w.id === warehouseId)?.name ?? ''} · 共 ${totalShipments} 件`}
+              </Typography>
+            </Box>
             <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
-              {warehouseId === ALL_WAREHOUSES
-                ? `全部 ${whCount} 个仓库 · 共 ${totalShipments} 件`
-                : `${warehouses.find(w => w.id === warehouseId)?.name ?? ''} · 共 ${totalShipments} 件`}
+              近 {days} 天 · {activeDays} 天有出货
             </Typography>
           </Box>
-        }
-        subheader={
-          <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
-            近 {days} 天 · {activeDays} 天有出货
-          </Typography>
-        }
-        sx={{ pb: 0.5 }}
-      />
+        </Box>
 
-      <CardContent sx={{ pt: 0.5, pb: 1.5 }}>
+      <Box sx={{ p: 2, pt: 0.5, pb: 1.5 }}>
         {/* 统计摘要 */}
         <Box sx={{ display: 'flex', gap: 3, mb: 2, flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -467,8 +462,8 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
             {colorScheme === 'ocean' ? '🌊 海洋蓝' : colorScheme === 'forest' ? '🌲 森林绿' : '🌅 日落橙'}
           </Typography>
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

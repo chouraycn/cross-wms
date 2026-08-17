@@ -8,8 +8,6 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Chip,
   useTheme,
 } from '@mui/material';
@@ -50,11 +48,11 @@ const AutomationTemplates: React.FC<AutomationTemplatesProps> = ({
           const tplColor = TASK_TYPE_COLORS[tpl.taskType];
           const tplIcon = TEMPLATE_ICON_MAP[tpl.icon] || <CodeIcon sx={{ fontSize: 20 }} />;
           return (
-            <Card
+            <Box
               key={tpl.id}
-              elevation={0}
               sx={{
-                border: `1px solid ${gs.border}`,
+                border: '1px solid',
+                borderColor: 'divider',
                 borderRadius: 2,
                 transition: 'all 0.15s ease',
                 cursor: 'pointer',
@@ -66,7 +64,7 @@ const AutomationTemplates: React.FC<AutomationTemplatesProps> = ({
               }}
               onClick={() => onQuickCreate(tpl)}
             >
-              <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+              <Box sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
                 {/* 头部：图标 + 名称 */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                   <Box
@@ -118,8 +116,8 @@ const AutomationTemplates: React.FC<AutomationTemplatesProps> = ({
                     点击创建 →
                   </Typography>
                 </Box>
-              </CardContent>
-            </Card>
+              </Box>
+            </Box>
           );
         })}
       </Box>

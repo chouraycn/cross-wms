@@ -24,8 +24,6 @@ import {
   CircularProgress,
   Grid,
   Chip,
-  Card,
-  CardContent,
   Tooltip,
 } from '@mui/material';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
@@ -458,18 +456,18 @@ const ImageGenerationSettingsTab: React.FC = () => {
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {providers.map((provider) => (
-                <Card
+                <Box
                   key={provider.id}
-                  variant="outlined"
                   sx={{
                     borderRadius: 2,
+                    border: '1px solid',
                     borderColor: provider.available
                       ? 'success.light'
-                      : gs.border,
+                      : 'divider',
                     bgcolor: 'transparent',
                   }}
                 >
-                  <CardContent sx={{ '&:last-child': { pb: 2 } }}>
+                  <Box sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Box
                       sx={{
                         display: 'flex',
@@ -632,8 +630,8 @@ const ImageGenerationSettingsTab: React.FC = () => {
                         </Box>
                       </Box>
                     )}
-                  </CardContent>
-                </Card>
+                  </Box>
+                </Box>
               ))}
             </Box>
           )}

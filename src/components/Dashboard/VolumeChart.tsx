@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Card, CardContent, CardHeader, Typography, Box, IconButton, ToggleButton, ToggleButtonGroup,
+  Typography, Box, IconButton, ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
@@ -53,15 +53,15 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId, timeRange }) => 
   // 加载状态
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
               容积率趋势
             </Typography>
-          }
-        />
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
           <Box sx={{ textAlign: 'center' }}>
             <div className="MuiCircularProgress-root MuiCircularProgress-indeterminate" style={{ width: 40, height: 40 }}>
               <svg className="MuiCircularProgress-svg" viewBox="22 22 44 44">
@@ -69,110 +69,106 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId, timeRange }) => 
               </svg>
             </div>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   // 错误状态
   if (error) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
               容积率趋势
             </Typography>
-          }
-        />
-        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, pt: 0, pb: 2 }}>
           <Box sx={{ py: 6, textAlign: 'center' }}>
             <Typography sx={{ fontSize: '0.8125rem', color: '#EF4444' }}>
               {error}
             </Typography>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   // 空数据状态
   if (volumeHistory.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
               容积率趋势
             </Typography>
-          }
-          subheader={
             <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
               近 {settings.trendCompareDays} 天 · {CALC_MODE_LABEL[calcMode]}
             </Typography>
-          }
-          action={
+          </Box>
+          <Box sx={{ flexShrink: 0 }}>
             <IconButton size="small" onClick={handleExport} title="导出CSV" disabled>
               <DownloadOutlinedIcon fontSize="small" />
             </IconButton>
-          }
-        />
-        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, pt: 0, pb: 2 }}>
           <Box sx={{ py: 6, textAlign: 'center' }}>
             <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
               暂无容积率趋势数据
             </Typography>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-      <CardHeader
-        title={
-          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
-            容积率趋势
-          </Typography>
-        }
-        subheader={
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.25 }}>
-            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
-              近 {settings.trendCompareDays} 天 · {CALC_MODE_LABEL[calcMode]}
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              容积率趋势
             </Typography>
-            <ToggleButtonGroup
-              value={calcMode}
-              exclusive
-              onChange={handleModeChange}
-              size="small"
-              sx={{
-                '& .MuiToggleButton-root': {
-                  fontSize: '0.7rem',
-                  py: 0.25,
-                  px: 1,
-                  border: '1px solid #E5E7EB',
-                  color: '#9CA3AF',
-                  textTransform: 'none',
-                  '&.Mui-selected': {
-                    color: '#111827',
-                    backgroundColor: '#F3F4F6',
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.25 }}>
+              <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                近 {settings.trendCompareDays} 天 · {CALC_MODE_LABEL[calcMode]}
+              </Typography>
+              <ToggleButtonGroup
+                value={calcMode}
+                exclusive
+                onChange={handleModeChange}
+                size="small"
+                sx={{
+                  '& .MuiToggleButton-root': {
+                    fontSize: '0.7rem',
+                    py: 0.25,
+                    px: 1,
+                    border: '1px solid #E5E7EB',
+                    color: '#9CA3AF',
+                    textTransform: 'none',
+                    '&.Mui-selected': {
+                      color: '#111827',
+                      backgroundColor: '#F3F4F6',
+                    },
                   },
-                },
-              }}
-            >
-              <ToggleButton value="items">件数</ToggleButton>
-              <ToggleButton value="volume">体积</ToggleButton>
-            </ToggleButtonGroup>
+                }}
+              >
+                <ToggleButton value="items">件数</ToggleButton>
+                <ToggleButton value="volume">体积</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
           </Box>
-        }
-        action={
-          <IconButton size="small" onClick={handleExport} title="导出CSV">
-            <DownloadOutlinedIcon fontSize="small" />
-          </IconButton>
-        }
-      />
-      <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          <Box sx={{ flexShrink: 0 }}>
+            <IconButton size="small" onClick={handleExport} title="导出CSV">
+              <DownloadOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+      <Box sx={{ p: 2, pt: 0, pb: 2 }}>
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={volumeHistory} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
@@ -220,8 +216,8 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId, timeRange }) => 
             />
           </LineChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

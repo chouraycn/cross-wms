@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Card, CardContent, CardHeader, Typography, Box, IconButton } from '@mui/material';
+import { Typography, Box, IconButton } from '@mui/material';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
@@ -59,15 +59,15 @@ const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId, time
   // 加载状态
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
               仓库容积使用情况
             </Typography>
-          }
-        />
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
           <Box sx={{ textAlign: 'center' }}>
             <div className="MuiCircularProgress-root MuiCircularProgress-indeterminate" style={{ width: 40, height: 40 }}>
               <svg className="MuiCircularProgress-svg" viewBox="22 22 44 44">
@@ -75,82 +75,80 @@ const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId, time
               </svg>
             </div>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   // 错误状态
   if (error) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
               仓库容积使用情况
             </Typography>
-          }
-        />
-        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2, pt: 0, pb: 2 }}>
           <Box sx={{ py: 6, textAlign: 'center' }}>
             <Typography sx={{ fontSize: '0.8125rem', color: '#EF4444' }}>
               {error}
             </Typography>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   // 没有仓库时显示空状态
   if (filtered.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
-        <CardHeader
-          title={
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
               仓库容积使用情况
             </Typography>
-          }
-          action={
+          </Box>
+          <Box sx={{ flexShrink: 0 }}>
             <IconButton size="small" onClick={handleExport} title="导出CSV" disabled>
               <DownloadOutlinedIcon fontSize="small" />
             </IconButton>
-          }
-        />
-        <CardContent>
+          </Box>
+        </Box>
+        <Box sx={{ p: 2 }}>
           <Box sx={{ py: 6, textAlign: 'center' }}>
             <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
               暂无仓库数据，请先添加仓库
             </Typography>
           </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
-      <CardHeader
-        title={
-          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
-            {warehouseId === ALL_WAREHOUSES
-              ? '各仓库容积使用情况'
-              : `${filtered[0]?.name ?? ''}容积使用情况`}
-          </Typography>
-        }
-        subheader={
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
-            已用 / 空闲（件数）
-          </Typography>
-        }
-        action={
-          <IconButton size="small" onClick={handleExport} title="导出CSV">
-            <DownloadOutlinedIcon fontSize="small" />
-          </IconButton>
-        }
-      />
-      <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              {warehouseId === ALL_WAREHOUSES
+                ? '各仓库容积使用情况'
+                : `${filtered[0]?.name ?? ''}容积使用情况`}
+            </Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
+              已用 / 空闲（件数）
+            </Typography>
+          </Box>
+          <Box sx={{ flexShrink: 0 }}>
+            <IconButton size="small" onClick={handleExport} title="导出CSV">
+              <DownloadOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+      <Box sx={{ p: 2, pt: 0, pb: 2 }}>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
@@ -178,8 +176,8 @@ const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId, time
             <Bar dataKey="free" stackId="a" fill="#E5E7EB" radius={[4, 4, 0, 0]} maxBarSize={40} />
           </BarChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 
