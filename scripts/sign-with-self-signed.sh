@@ -29,6 +29,7 @@ echo "Using self-signed certificate: $SELF_SIGNED_IDENTITY"
 
 ENT_TMP_DIR=$(mktemp -d -t cdfknowclow-entitlements.XXXXXX)
 ENT_TMP_APP="$ENT_TMP_DIR/app.plist"
+ENT_TMP_NODE="$ENT_TMP_DIR/node.plist"
 
 cat > "$ENT_TMP_APP" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -55,6 +56,27 @@ cat > "$ENT_TMP_APP" <<'PLIST'
 </plist>
 PLIST
 
+# Node.js binary 需要额外的 JIT 和未签名内存 entitlements
+# Hardened Runtime 下 V8 引擎的 JIT 编译器需要这些才能正常执行脚本
+cat > "$ENT_TMP_NODE" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    <key>com.apple.security.network.server</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+</dict>
+</plist>
+PLIST
+
 xattr -cr "$APP_ROOT" 2>/dev/null || true
 
 sign_item() {
@@ -65,13 +87,18 @@ sign_plain_item() {
     codesign --force --options runtime --timestamp=none --sign "$SELF_SIGNED_IDENTITY" --keychain "$TEMP_KEYCHAIN" "$1"
 }
 
+# Node.js binary 需要带 JIT entitlements 签名，否则 Hardened Runtime 下 V8 JIT 会 SIGTRAP
+sign_node_item() {
+    codesign --force --options runtime --timestamp=none --entitlements "$ENT_TMP_NODE" --sign "$SELF_SIGNED_IDENTITY" --keychain "$TEMP_KEYCHAIN" "$1"
+}
+
 NODE_BIN="$APP_ROOT/Contents/Resources/node/bin/node"
 if [ -f "$NODE_BIN" ]; then
-    echo "Signing Node.js binary"; sign_plain_item "$NODE_BIN"
+    echo "Signing Node.js binary (with JIT entitlements)"; sign_node_item "$NODE_BIN"
 fi
 
 if [ -d "$APP_ROOT/Contents/Resources" ]; then
-    find "$APP_ROOT/Contents/Resources" -type f -print0 2>/dev/null | while IFS= read -r -d '' f; do
+    find "$APP_ROOT/Contents/Resources" -type f -not -path "*/node/*" -print0 2>/dev/null | while IFS= read -r -d '' f; do
         if /usr/bin/file "$f" 2>/dev/null | /usr/bin/grep -q "Mach-O"; then
             echo "Signing binary: $f"; sign_plain_item "$f"
         fi

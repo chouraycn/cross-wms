@@ -277,7 +277,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
 
   return (
     <StaffAuthContext.Provider value={authValue}>
-      <Box sx={{ display: 'flex', height: '100%', minHeight: 0, bgcolor: '#f7f5ef' }} className="sd-root">
+      <Box sx={{ display: 'flex', height: '100%', minHeight: 0, bgcolor: '#FFFFFF' }} className="sd-root">
         <StaffSidebar
           selected={selected}
           onNavigate={handleNavigate}
@@ -297,16 +297,16 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
               overflow: 'hidden',
             }}
           >
-            {/* 主内容区：v1.7.235 移除顶部空 header 占位（原放用户条，44px 高 + borderBottom 分隔线） */}
+            {/* 主内容区：v1.7.236 移除 contain:paint（WKWebView 中破坏滚动） */}
             <Box
               component="main"
               sx={{
                 minHeight: 0,
                 flex: 1,
                 overflowY: 'auto',
-                // v1.7.235: 滚动性能优化（与主应用 scrollRef 一致）
+                // v1.7.236: 移除 contain:paint（与主应用 scrollRef 同步），
+                // 在 WKWebView 中 contain:paint 会破坏 overflowY:auto 的滚动事件传递
                 overscrollBehavior: 'contain',
-                contain: 'paint',
                 WebkitOverflowScrolling: 'touch',
               }}
             >

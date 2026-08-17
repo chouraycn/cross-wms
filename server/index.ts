@@ -737,20 +737,42 @@ if (fs.existsSync(FRONTEND_DIST_DIR) && fs.existsSync(path.join(FRONTEND_DIST_DI
 // 统一记录所有未捕获的请求错误（经由 errorLogger 落盘），避免 500 错误静默丢失。
 // 设计：仅做日志记录 + 安全响应，不尝试“恢复”。recoveryEngine 是操作级重试/降级机制，
 // 在 HTTP 中间件中恢复请求会改变实时行为，故此处不接入；调用方可自行包裹 recoveryEngine。
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   // 死代码接入：在记录错误前对消息/堆栈中的密钥做脱敏（additive，仅影响日志内容，不改动响应）
   const safeMessage = redactSecrets(err?.message || String(err));
   const safeStack = err?.stack ? redactSecrets(err.stack) : undefined;
   const safeErr = safeStack
     ? Object.assign(Object.create(err), err, { message: safeMessage, stack: safeStack })
     : Object.assign(Object.create(err), err, { message: safeMessage });
+  const method = req.method;
+  const url = req.originalUrl || req.url;
   errorLogger.error(
     '[Express] 未处理的请求错误',
-    { service: 'express', operation: 'request' },
+    { service: 'express', operation: 'request', method, url },
     safeErr,
   );
+  // 持久化到文件日志（~/Library/Application Support/CDFKnowClow/logs/server-errors.log），
+  // 便于排查"员工报 Internal Server Error"类问题——stdout 仅进 OSLog，普通用户难以获取。
+  try {
+    const logsDir = AppPaths.logsDir;
+    if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+    const entry = JSON.stringify({
+      ts: new Date().toISOString(),
+      method,
+      url,
+      message: safeMessage,
+      stack: safeStack,
+    }) + '\n';
+    fs.appendFileSync(path.join(logsDir, 'server-errors.log'), entry);
+  } catch { /* 日志写入失败不应影响错误响应 */ }
   if (!res.headersSent) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    // 响应中包含 method/url/errorMessage，便于前端/用户直接定位是哪个请求失败
+    res.status(500).json({
+      error: 'Internal Server Error',
+      method,
+      url,
+      errorMessage: safeMessage,
+    });
   }
 });
 

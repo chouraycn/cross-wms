@@ -581,7 +581,7 @@ const NavList: React.FC<NavListProps> = ({
             backgroundColor: isSessionActive ? bgActive : 'transparent',
             '&:hover': {
               backgroundColor: isSessionActive ? bgActiveHover : bgHover,
-              '& .session-actions': { opacity: 1 },
+              '& .session-actions': { opacity: 1, pointerEvents: 'auto' },
               '& .session-time': { opacity: 0 },
             },
           }}
@@ -648,9 +648,12 @@ const NavList: React.FC<NavListProps> = ({
                 top: '50%',
                 transform: 'translateY(-50%)',
                 opacity: 0,
+                pointerEvents: 'none',
                 transition: 'opacity 0.15s',
                 display: 'flex',
                 alignItems: 'center',
+                // Bug Fix: opacity:0 时仍然会拦截点击事件（拦截到底下的 ListItemButton onClick），
+                // 所以设置 pointerEvents:none，hover 时再启用点击
               }}
             >
               <Tooltip title={isPinned ? '取消置顶' : '置顶'} placement="top" arrow>

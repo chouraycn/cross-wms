@@ -14,17 +14,18 @@ body {
   /* v1.5.73: easy_drag=False 时全局排除拖拽，仅有 WindowDragBar 为 drag 区域 */
   /* 确保内容区文字始终可选中（WKWebView 中 -webkit-app-region:drag 会阻止文字选择） */
   -webkit-app-region: no-drag;
-  /* v1.7.235: 阻止 body 自身滚动 — 滚动由内部 scrollRef 容器接管，
-     避免 body 与主滚动容器双重滚动冲突（滚动到底部时事件冒泡导致页面跳动） */
+  /* v1.7.236: 修复 DMG 中页面无法滚动的问题。
+     之前 overflow:hidden + overscroll-behavior:none 在 WKWebView 中过于激进，
+     会阻止子容器 scrollRef 的滚动事件正常触发（尤其 contain:paint 叠加时）。
+     改为 overflow:hidden 仅防止 body 产生滚动条，但不禁用 overscroll-behavior，
+     保留默认滚动链传递，让子容器能正常接收滚动事件。 */
   overflow: hidden;
-  overscroll-behavior: none;
 }
 
 html {
-  /* v1.7.235: html 也禁止滚动 + overscroll-behavior:none，
-     彻底切断滚动链（scroll chaining） */
-  overflow: hidden;
-  overscroll-behavior: none;
+  /* v1.7.236: html 层不禁用 overflow，让浏览器默认行为接管。
+     之前 overflow:hidden + overscroll-behavior:none 切断了所有滚动链，
+     在 WKWebView 中导致子容器 overflowY:auto 不生效（滚动事件被 html 层吃掉）。 */
 }
 
 /* MUI dark mode 会给 body 添加 .MuiCssBaseline-root 和设置 background-color */
@@ -33,8 +34,10 @@ html {
 }
 
 #root {
-  /* v1.7.235: height 替代 min-height — 防止 root 超出视窗产生 body 滚动条
-     与内部 scrollRef 滚动容器冲突（双重滚动 → 卡顿/无法滚动） */
+  /* v1.7.236: 使用 height:100vh + overflow:hidden 固定 root 高度，
+     但不再与 contain:paint 叠加（contain 会创建独立合成层，在 WKWebView 中
+     破坏 overflowY:auto 的滚动事件传递）。root 只负责固定视窗高度，
+     滚动完全由内部 scrollRef 容器接管。 */
   height: 100vh;
   overflow: hidden;
 }

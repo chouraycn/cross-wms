@@ -1391,12 +1391,11 @@ const MainLayout: React.FC = () => {
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
-              // v1.7.235: 滚动性能优化
-              // - overscrollBehavior:contain 切断滚动链，防止滚到底/顶时事件冒泡到父级触发页面跳动
-              // - contain:paint 限定绘制边界，滚动时只重绘可视区域，减少整页重绘开销
-              // - WebkitOverflowScrolling:touch 启用惯性滚动（触控板/触摸场景）
+              // v1.7.236: 移除 contain:paint — 在 WKWebView 中 contain:paint 会创建
+              // 独立合成层，破坏 overflowY:auto 的滚动事件传递，导致页面无法滚动。
+              // overscrollBehavior:contain 保留，防止滚到底/顶时事件冒泡到父级。
+              // WebkitOverflowScrolling:touch 启用惯性滚动（触控板/触摸场景）
               overscrollBehavior: 'contain',
-              contain: 'paint',
               WebkitOverflowScrolling: 'touch',
               // 滚动条默认隐藏，滚动时显示（通过 scrollbar-visible class）
               '&::-webkit-scrollbar': { width: '6px', height: '6px' },

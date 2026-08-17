@@ -266,7 +266,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       {!collapsed && <SidebarLogo collapsed={collapsed} />}
 
       {/* Navigation list (含历史对话) */}
-      <Box sx={{ flex: 1, minHeight: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
+      <Box
+        sx={{ flex: 1, minHeight: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}
+        // Bug Fix: 外层 Sidebar 设置了 WebkitAppRegion: drag 用于窗口拖动，
+        // 必须在 NavList 区域设为 no-drag，否则所有点击事件被系统吞掉（窗口拖动优先），
+        // 导致历史会话 / 导航项点击完全无反应（onClick 从不触发）
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+      >
         <NavList
           collapsed={collapsed}
           activePath={activePath}
