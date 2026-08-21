@@ -5,6 +5,8 @@ export type ErrorSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical';
 export interface ErrorContext {
   service?: string;
   operation?: string;
+  method?: string;
+  url?: string;
   requestId?: string;
   sessionId?: string;
   userId?: string;
