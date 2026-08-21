@@ -243,7 +243,9 @@ if [[ "$SKIP_RELEASE" != "true" ]]; then
 
   # Create GitHub Release（环境自适应：gh 可用走 gh，否则回退 curl + GITHUB_TOKEN）
   echo "📦 Creating GitHub Release (v${VERSION})..."
-  REPO="chouraycn/CDFKnow"
+  # REPO 自动从 origin remote 派生，避免硬编码与真实仓库不一致（曾误写为 chouraycn/CDFKnow 导致 Release 创建到不存在的仓库）
+  REPO=$(git remote get-url origin 2>/dev/null | sed -E 's#.*[:/]([^/]+/[^/]+?)(\.git)?$#\1#; s#.*github\.com/##' | head -1)
+  if [ -z "$REPO" ]; then REPO="chouraycn/cross-wms"; fi
   ASSET_ENC="CDF%20Know%20Clow-${VERSION}.dmg"
 
   if command -v gh >/dev/null 2>&1; then
@@ -274,26 +276,31 @@ SHA256: $(shasum -a 256 "$DMG" 2>/dev/null | awk '{print $1}' || echo 'N/A')" \
       API="https://api.github.com/repos/${REPO}"
       UP="https://uploads.github.com/repos/${REPO}/releases"
       # 取已存在 Release（re-release 场景），否则创建
+      # 注意：grep 无匹配会返回非 0；用 || true 防止 set -e/pipefail 在首次创建（无 Release）时中断脚本
       REL_ID=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
-        "$API/releases/tags/$TAG" | grep -o '"id"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*')
+        "$API/releases/tags/$TAG" | grep -o '"id"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*' || true)
       if [ -z "$REL_ID" ]; then
         REL_ID=$(curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
           -H "Content-Type: application/json" \
           -d "{\"tag_name\":\"$TAG\",\"name\":\"CDF Know Clow v${VERSION}\",\"body\":\"CDF Know Clow v${VERSION}\",\"draft\":false,\"prerelease\":false}" \
-          "$API/releases" | grep -o '"id"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*')
+          "$API/releases" | grep -o '"id"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*' || true)
       fi
-      echo "  Release ID: ${REL_ID:-N/A}"
-      upload_asset() {
-        local F="$1" N="$2"
-        [ -f "$F" ] || return 0
-        curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
-          -H "Content-Type: application/octet-stream" \
-          --data-binary @"$F" \
-          "${UP}/${REL_ID}/assets?name=$N" >/dev/null \
-          && echo "  ✅ 上传 $N"
-      }
-      [ -f "$DMG" ] && upload_asset "$DMG" "$ASSET_ENC"
-      [ -f "$ROOT_DIR/release/release.json" ] && upload_asset "$ROOT_DIR/release/release.json" "release.json"
+      echo "  Release ID: ${REL_ID:-N/A} (repo: ${REPO})"
+      if [ -n "$REL_ID" ]; then
+        upload_asset() {
+          local F="$1" N="$2"
+          [ -f "$F" ] || return 0
+          curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$F" \
+            "${UP}/${REL_ID}/assets?name=$N" >/dev/null \
+            && echo "  ✅ 上传 $N"
+        }
+        [ -f "$DMG" ] && upload_asset "$DMG" "$ASSET_ENC" || true
+        [ -f "$ROOT_DIR/release/release.json" ] && upload_asset "$ROOT_DIR/release/release.json" "release.json" || true
+      else
+        echo "⚠️  未能获取/创建 Release ID，跳过资产上传（请检查网络与 GITHUB_TOKEN 权限）"
+      fi
     fi
   fi
 
