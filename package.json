@@ -1,7 +1,7 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.7.240",
+  "version": "1.7.241",
   "type": "module",
   "bin": {
     "cdf-cli": "bin/cdf-cli.mjs"

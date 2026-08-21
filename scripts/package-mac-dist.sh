@@ -241,11 +241,16 @@ if [[ "$SKIP_RELEASE" != "true" ]]; then
   git push origin "$TAG"
   echo "✅ Tag $TAG pushed"
 
-  # Create GitHub Release
-  echo "📦 Creating GitHub Release..."
-  gh release create "$TAG" \
-    --title "CDF Know Clow v${VERSION}" \
-    --notes "# CDF Know Clow v${VERSION}
+  # Create GitHub Release（环境自适应：gh 可用走 gh，否则回退 curl + GITHUB_TOKEN）
+  echo "📦 Creating GitHub Release (v${VERSION})..."
+  REPO="chouraycn/CDFKnow"
+  ASSET_ENC="CDF%20Know%20Clow-${VERSION}.dmg"
+
+  if command -v gh >/dev/null 2>&1; then
+    # —— 路径 A：gh 可用（CI 环境）——
+    gh release create "$TAG" \
+      --title "CDF Know Clow v${VERSION}" \
+      --notes "# CDF Know Clow v${VERSION}
 
 ## 新功能
 - Swift 原生 macOS 应用（WKWebView）
@@ -258,33 +263,38 @@ if [[ "$SKIP_RELEASE" != "true" ]]; then
 
 ---
 SHA256: $(shasum -a 256 "$DMG" 2>/dev/null | awk '{print $1}' || echo 'N/A')" \
-    2>/dev/null || {
-      echo "⚠️  gh release create failed, trying API upload..."
-    }
-
-  # Upload DMG
-  if [ -f "$DMG" ]; then
-    echo "  上传 DMG..."
-    gh release upload "$TAG" "$DMG" --clobber 2>/dev/null || {
-      # Fallback: use GitHub API directly
-      UPLOAD_URL=$(gh api repos/chouraycn/CDFKnow/releases/tags/$TAG --jq '.upload_url' 2>/dev/null || true)
-      if [ -n "$UPLOAD_URL" ]; then
-        UPLOAD_URL="${UPLOAD_URL%%\{*}"
-        DMG_FILENAME="CDF Know Clow-${VERSION}.dmg"
-        curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
-          -H "Content-Type: application/octet-stream" \
-          --data-binary @"$DMG" \
-          "${UPLOAD_URL}?name=${DMG_FILENAME}" >/dev/null
+      2>/dev/null || echo "⚠️  gh release create failed"
+    [ -f "$DMG" ] && gh release upload "$TAG" "$DMG" --clobber 2>/dev/null || true
+    [ -f "$ROOT_DIR/release/release.json" ] && gh release upload "$TAG" "$ROOT_DIR/release/release.json" --clobber 2>/dev/null || true
+  else
+    # —— 路径 B：gh 缺失，回退纯 curl + GITHUB_TOKEN ——
+    if [ -z "$GITHUB_TOKEN" ]; then
+      echo "⚠️  gh 未安装且 GITHUB_TOKEN 未设置，跳过 Release 上传（DMG 已构建于 $DMG）"
+    else
+      API="https://api.github.com/repos/${REPO}"
+      UP="https://uploads.github.com/repos/${REPO}/releases"
+      # 取已存在 Release（re-release 场景），否则创建
+      REL_ID=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+        "$API/releases/tags/$TAG" | grep -o '"id"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*')
+      if [ -z "$REL_ID" ]; then
+        REL_ID=$(curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+          -H "Content-Type: application/json" \
+          -d "{\"tag_name\":\"$TAG\",\"name\":\"CDF Know Clow v${VERSION}\",\"body\":\"CDF Know Clow v${VERSION}\",\"draft\":false,\"prerelease\":false}" \
+          "$API/releases" | grep -o '"id"[[:space:]]*:[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*')
       fi
-    }
-    echo "  ✅ DMG 上传成功"
-  fi
-
-  # Upload release.json
-  if [ -f "$ROOT_DIR/release/release.json" ]; then
-    echo "  上传 release.json..."
-    gh release upload "$TAG" "$ROOT_DIR/release/release.json" --clobber 2>/dev/null || true
-    echo "  ✅ release.json 上传成功"
+      echo "  Release ID: ${REL_ID:-N/A}"
+      upload_asset() {
+        local F="$1" N="$2"
+        [ -f "$F" ] || return 0
+        curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+          -H "Content-Type: application/octet-stream" \
+          --data-binary @"$F" \
+          "${UP}/${REL_ID}/assets?name=$N" >/dev/null \
+          && echo "  ✅ 上传 $N"
+      }
+      [ -f "$DMG" ] && upload_asset "$DMG" "$ASSET_ENC"
+      [ -f "$ROOT_DIR/release/release.json" ] && upload_asset "$ROOT_DIR/release/release.json" "release.json"
+    fi
   fi
 
   echo "✅ Release v${VERSION} 已发布!"
