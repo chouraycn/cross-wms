@@ -11,6 +11,7 @@
  * 所有方法使用 WmsFileStorage 同步 API。
  */
 import { createDocumentStorage } from '../storage/index.js';
+import { getDb } from '../db-core.js';
 import type {
   QualityCheck,
   QualityCheckRow,
@@ -22,6 +23,8 @@ import type {
   WmsAlertRow,
   WmsReport,
   WmsReportRow,
+  TransferDraft,
+  TransferDraftRow,
 } from '../models/wms-skill.js';
 import {
   qualityCheckRowToModel,
@@ -29,6 +32,7 @@ import {
   outboundReviewRowToModel,
   alertRowToModel,
   reportRowToModel,
+  transferDraftRowToModel,
 } from '../models/wms-skill.js';
 import fs from 'fs';
 import path from 'path';
@@ -1061,4 +1065,128 @@ export function generateInventoryReport(params?: {
 /** 删除报表记录 */
 export function deleteReport(id: number): boolean {
   return wms.delete('wms_reports', id);
+}
+
+// ===================== 调拨草稿（Transfer Draft）DAO =====================
+
+/** 源仓某 SKU 的可用量快照 */
+export interface InventoryAvailability {
+  sku: string;
+  name: string;
+  /** 账面数量 */
+  quantity: number;
+  /** 锁定数量 */
+  lockedQuantity: number;
+  /** 可用量 = quantity - lockedQuantity */
+  available: number;
+}
+
+/**
+ * 真实查询源仓某 SKU 的可用量（与 wms_transfer_create 技能同源：available = quantity - locked_quantity）。
+ *
+ * 数据来自 inventory 主数据表（即 db_query 工具查询的同一张表），保证路由与技能口径一致。
+ * 表不存在 / 无记录 / 查询异常时优雅返回 null（与技能 db_query 表缺失降级行为一致）。
+ */
+export function queryInventoryAvailability(warehouseId: string, sku: string): InventoryAvailability | null {
+  try {
+    const db = getDb();
+    const row = db
+      .prepare(
+        'SELECT sku, name, quantity, locked_quantity FROM inventory WHERE sku = ? AND warehouse_id = ? LIMIT 1',
+      )
+      .get(sku, warehouseId) as
+      | { sku: string; name: string | null; quantity: number; locked_quantity: number }
+      | undefined;
+    if (!row) return null;
+    const quantity = Number(row.quantity) || 0;
+    const lockedQuantity = Number(row.locked_quantity) || 0;
+    return {
+      sku: row.sku,
+      name: row.name ?? '',
+      quantity,
+      lockedQuantity,
+      available: quantity - lockedQuantity,
+    };
+  } catch {
+    // inventory 主数据表缺失或查询异常 → 优雅降级
+    return null;
+  }
+}
+
+/** 创建调拨草稿，返回自增 ID */
+export function createTransferDraft(draft: Omit<TransferDraft, 'id' | 'createdAt' | 'updatedAt'>): number {
+  const now = new Date().toISOString();
+  const id = wms.nextId('wms_transfer_drafts');
+  const row: TransferDraftRow = {
+    id,
+    from_warehouse: draft.fromWarehouse,
+    to_warehouse: draft.toWarehouse,
+    from_location: draft.fromLocation ?? null,
+    to_location: draft.toLocation ?? null,
+    transfer_type: draft.transferType ?? '仓库间',
+    urgent: draft.urgent ? 1 : 0,
+    items: draft.items,
+    status: draft.status,
+    gap_count: draft.gapCount,
+    note: draft.note ?? null,
+    created_at: now,
+    updated_at: now,
+  };
+  wms.create<TransferDraftRow>('wms_transfer_drafts', id, row);
+  return id;
+}
+
+/** 查询调拨草稿，支持 fromWarehouse / toWarehouse / status / sku 过滤 */
+export function getTransferDrafts(filters?: {
+  fromWarehouse?: string;
+  toWarehouse?: string;
+  status?: string;
+  sku?: string;
+}): TransferDraft[] {
+  let rows = wms.list<TransferDraftRow>('wms_transfer_drafts');
+  if (filters?.fromWarehouse) {
+    rows = rows.filter((r) => r.from_warehouse === filters.fromWarehouse);
+  }
+  if (filters?.toWarehouse) {
+    rows = rows.filter((r) => r.to_warehouse === filters.toWarehouse);
+  }
+  if (filters?.status) {
+    rows = rows.filter((r) => r.status === filters.status);
+  }
+  if (filters?.sku) {
+    rows = rows.filter((r) => (r.items ?? []).some((it) => it.sku.includes(filters.sku!)));
+  }
+  rows = rows.sort((a, b) => (a.created_at > b.created_at ? -1 : 1));
+  return rows.map(transferDraftRowToModel);
+}
+
+/** 根据 ID 查询单条调拨草稿 */
+export function getTransferDraftById(id: number): TransferDraft | undefined {
+  const row = wms.get<TransferDraftRow>('wms_transfer_drafts', id);
+  return row ? transferDraftRowToModel(row) : undefined;
+}
+
+/** 更新调拨草稿（如确认 / 取消） */
+export function updateTransferDraft(id: number, updates: Partial<TransferDraft>): boolean {
+  const existing = wms.get<TransferDraftRow>('wms_transfer_drafts', id);
+  if (!existing) return false;
+  const now = new Date().toISOString();
+  const merged: TransferDraft = { ...transferDraftRowToModel(existing), ...updates, updatedAt: now };
+  const row: TransferDraftRow = {
+    id,
+    from_warehouse: merged.fromWarehouse,
+    to_warehouse: merged.toWarehouse,
+    from_location: merged.fromLocation ?? null,
+    to_location: merged.toLocation ?? null,
+    transfer_type: merged.transferType ?? '仓库间',
+    urgent: merged.urgent ? 1 : 0,
+    items: merged.items,
+    status: merged.status,
+    gap_count: merged.gapCount,
+    note: merged.note ?? null,
+    created_at: existing.created_at,
+    updated_at: now,
+  };
+  wms.update<TransferDraftRow>('wms_transfer_drafts', id, row);
+  return true;
 }

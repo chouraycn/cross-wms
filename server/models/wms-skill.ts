@@ -89,6 +89,41 @@ export interface WmsReport {
   updatedAt?: string;
 }
 
+/** 调拨草稿明细行 */
+export interface TransferDraftItem {
+  sku: string;
+  name: string;
+  /** 申请调拨数量 */
+  qty: number;
+  /** 源仓可用量（quantity - locked_quantity） */
+  availableAtSource: number;
+  /** 缺口量 = qty - availableAtSource（>0 表示源仓不足） */
+  gap: number;
+}
+
+/** 调拨草稿（技能/路由生成，待用户确认后提交为正式调拨单） */
+export interface TransferDraft {
+  id?: number;
+  /** 源仓库编码 */
+  fromWarehouse: string;
+  /** 目标仓库编码 */
+  toWarehouse: string;
+  /** 库位间调拨时源库位（仓库间调拨为 null） */
+  fromLocation?: string | null;
+  /** 库位间调拨时目标库位（仓库间调拨为 null） */
+  toLocation?: string | null;
+  /** '仓库间' | '库位间' */
+  transferType?: string;
+  urgent?: boolean;
+  items: TransferDraftItem[];
+  status: 'pending_confirmation' | 'confirmed' | 'cancelled';
+  /** 存在缺口的明细行数 */
+  gapCount: number;
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // ===================== 预警阈值与检查结果类型 =====================
 
 /** 预警阈值配置 */
@@ -168,6 +203,42 @@ export interface OutboundReviewRow {
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** 数据库行：wms_transfer_drafts（文件存储，items 以嵌套数组留存） */
+export interface TransferDraftRow {
+  id: number;
+  from_warehouse: string;
+  to_warehouse: string;
+  from_location: string | null;
+  to_location: string | null;
+  transfer_type: string;
+  urgent: number; // 0 | 1
+  items: TransferDraftItem[];
+  status: string;
+  gap_count: number;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 数据库行 → 模型：wms_transfer_drafts */
+export function transferDraftRowToModel(row: TransferDraftRow): TransferDraft {
+  return {
+    id: row.id,
+    fromWarehouse: row.from_warehouse,
+    toWarehouse: row.to_warehouse,
+    fromLocation: row.from_location ?? null,
+    toLocation: row.to_location ?? null,
+    transferType: row.transfer_type,
+    urgent: row.urgent === 1,
+    items: Array.isArray(row.items) ? row.items : [],
+    status: row.status as TransferDraft['status'],
+    gapCount: row.gap_count,
+    note: row.note ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 /** 数据库行：wms_alerts */
