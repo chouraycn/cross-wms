@@ -18,18 +18,16 @@ import {
   Divider,
   useTheme,
 } from '@mui/material';
-import {
-  PlayArrow as PlayArrowIcon,
-  Pause as PauseIcon,
-  SkipNext as SkipNextIcon,
-  SkipPrevious as SkipPreviousIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  RemoveCircle as SkipIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Visibility as VisibilityIcon,
-} from '@mui/icons-material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import SkipIcon from '@mui/icons-material/RemoveCircle';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import dayjs from 'dayjs';
 import type { ExecutionRecord, ExecutionNode } from '../../services/executionHistoryApi';
 

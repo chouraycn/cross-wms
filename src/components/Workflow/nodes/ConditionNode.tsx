@@ -15,7 +15,8 @@ import {
   IconButton,
   Chip,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import type { WorkflowNode, ConditionConfig, ConditionOperator } from '../../../../server/engine/workflow/types';
 
 const CONDITION_OPERATORS: Array<{ operator: ConditionOperator; label: string }> = [

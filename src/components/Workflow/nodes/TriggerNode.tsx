@@ -14,12 +14,10 @@ import {
   MenuItem,
   TextField,
 } from '@mui/material';
-import {
-  Schedule as ScheduleIcon,
-  Event as EventIcon,
-  TouchApp as ManualIcon,
-  Link as WebhookIcon,
-} from '@mui/icons-material';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import EventIcon from '@mui/icons-material/Event';
+import ManualIcon from '@mui/icons-material/TouchApp';
+import WebhookIcon from '@mui/icons-material/Link';
 import type { WorkflowNode, TriggerConfig, TriggerType } from '../../../../server/engine/workflow/types';
 
 const TRIGGER_TYPES: Array<{ type: TriggerType; label: string; icon: React.ReactNode }> = [

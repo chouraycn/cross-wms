@@ -31,16 +31,14 @@ import {
   Paper,
   Alert,
 } from '@mui/material';
-import {
-  Search as SearchIcon,
-  Close as CloseIcon,
-  Tag as TagIcon,
-  FilterList as FilterIcon,
-  Memory as MemoryIcon,
-  TextFields as TextFieldsIcon,
-  Tune as TuneIcon,
-  Clear as ClearIcon,
-} from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
+import TagIcon from '@mui/icons-material/Tag';
+import FilterIcon from '@mui/icons-material/FilterList';
+import MemoryIcon from '@mui/icons-material/Memory';
+import TextFieldsIcon from '@mui/icons-material/TextFields';
+import TuneIcon from '@mui/icons-material/Tune';
+import ClearIcon from '@mui/icons-material/Clear';
 import { getGrayScale } from '../../constants/theme';
 
 // ===================== Types =====================

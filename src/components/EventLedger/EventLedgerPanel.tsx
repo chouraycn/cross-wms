@@ -46,18 +46,16 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import {
-  Search as SearchIcon,
-  Refresh as RefreshIcon,
-  FilterList as FilterIcon,
-  ExpandMore as ExpandMoreIcon,
-  Visibility as ViewIcon,
-  Timeline as TimelineIcon,
-  Storage as StorageIcon,
-  Event as EventIcon,
-  Assessment as StatsIcon,
-  PlayArrow as PlayIcon,
-} from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/Search';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import FilterIcon from '@mui/icons-material/FilterList';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ViewIcon from '@mui/icons-material/Visibility';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import StorageIcon from '@mui/icons-material/Storage';
+import EventIcon from '@mui/icons-material/Event';
+import StatsIcon from '@mui/icons-material/Assessment';
+import PlayIcon from '@mui/icons-material/PlayArrow';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { getGrayScale } from '../../constants/theme';
 import { eventLedgerApi, LedgerEvent, SessionMeta, LedgerStats, StepTimelineTurn } from '../../services/eventLedgerApi';

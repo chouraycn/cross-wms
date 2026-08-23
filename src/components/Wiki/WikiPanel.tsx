@@ -38,24 +38,22 @@ import {
   LinearProgress,
   Fade,
 } from '@mui/material';
-import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  Description as DescriptionIcon,
-  Tag as TagIcon,
-  Info as InfoIcon,
-  UploadFile as UploadFileIcon,
-  History as HistoryIcon,
-  Label as LabelIcon,
-  FilterList as FilterIcon,
-  Sort as SortIcon,
-  Close as CloseIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon,
-} from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/Search';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import DescriptionIcon from '@mui/icons-material/Description';
+import TagIcon from '@mui/icons-material/Tag';
+import InfoIcon from '@mui/icons-material/Info';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import HistoryIcon from '@mui/icons-material/History';
+import LabelIcon from '@mui/icons-material/Label';
+import FilterIcon from '@mui/icons-material/FilterList';
+import SortIcon from '@mui/icons-material/Sort';
+import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { getGrayScale } from '../../constants/theme';
 import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import WikiSearchDialog from './WikiSearchDialog';

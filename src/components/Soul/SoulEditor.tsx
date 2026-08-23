@@ -29,16 +29,14 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import {
-  Save as SaveIcon,
-  Undo as UndoIcon,
-  Redo as RedoIcon,
-  Check as CheckIcon,
-  Error as ErrorIcon,
-  Description as DescriptionIcon,
-  Person as PersonIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
+import SaveIcon from '@mui/icons-material/Save';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
+import CheckIcon from '@mui/icons-material/Check';
+import ErrorIcon from '@mui/icons-material/Error';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PersonIcon from '@mui/icons-material/Person';
+import InfoIcon from '@mui/icons-material/Info';
 import { getGrayScale } from '../../constants/theme';
 
 // ===================== Types =====================

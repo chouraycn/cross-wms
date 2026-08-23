@@ -14,12 +14,10 @@ import {
   InputLabel,
   Chip,
 } from '@mui/material';
-import {
-  SmartToy as AIIcon,
-  Build as ToolIcon,
-  Notifications as NotificationIcon,
-  Code as ScriptIcon,
-} from '@mui/icons-material';
+import AIIcon from '@mui/icons-material/SmartToy';
+import ToolIcon from '@mui/icons-material/Build';
+import NotificationIcon from '@mui/icons-material/Notifications';
+import ScriptIcon from '@mui/icons-material/Code';
 import type { WorkflowNode, ActionConfig, ActionType } from '../../../../server/engine/workflow/types';
 
 const ACTION_TYPES: Array<{ type: ActionType; label: string; icon: React.ReactNode }> = [

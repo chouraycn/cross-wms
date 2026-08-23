@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { IconButton, useTheme } from '@mui/material';
-import { SearchOutlined as SearchIcon, ChatBubbleOutline as ChatBubbleOutlineIcon } from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/SearchOutlined';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { getGrayScale } from '../../constants/theme';
 import { isPyWebView } from '../../services/tencentDocsApi';
 import { isMacOSApp } from '../../utils/env';

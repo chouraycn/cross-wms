@@ -25,20 +25,18 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import {
-  ZoomIn as ZoomInIcon,
-  ZoomOut as ZoomOutIcon,
-  FitScreen as FitScreenIcon,
-  Undo as UndoIcon,
-  Redo as RedoIcon,
-  Save as SaveIcon,
-  PlayArrow as PlayArrowIcon,
-  Stop as StopIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Download as DownloadIcon,
-  Upload as UploadIcon,
-} from '@mui/icons-material';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import FitScreenIcon from '@mui/icons-material/FitScreen';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
+import SaveIcon from '@mui/icons-material/Save';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 import { v4 as uuidv4 } from 'uuid';
 import TriggerNode from './nodes/TriggerNode';
 import ConditionNode from './nodes/ConditionNode';

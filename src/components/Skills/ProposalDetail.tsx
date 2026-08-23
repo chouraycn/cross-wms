@@ -3,7 +3,10 @@ import {
   Box, Typography, Button, Paper, Stack, Chip, Divider,
   TextField, IconButton, Alert,
 } from '@mui/material';
-import { ArrowLeft, ContentCopy, Check, X } from '@mui/icons-material';
+import ArrowLeft from '@mui/icons-material/ArrowLeft';
+import ContentCopy from '@mui/icons-material/ContentCopy';
+import Check from '@mui/icons-material/Check';
+import X from '@mui/icons-material/X';
 import type { SkillProposal } from '../../types/proposal';
 import type { GrayScale } from '../../constants/theme';
 import { applyProposal, rejectProposal, quarantineProposal, rollbackProposal } from '../../services/proposalApi';

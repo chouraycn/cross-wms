@@ -10,11 +10,9 @@ import {
   TextField,
   Chip,
 } from '@mui/material';
-import {
-  Timer as TimerIcon,
-  Event as EventIcon,
-  CheckCircle as ConditionIcon,
-} from '@mui/icons-material';
+import TimerIcon from '@mui/icons-material/Timer';
+import EventIcon from '@mui/icons-material/Event';
+import ConditionIcon from '@mui/icons-material/CheckCircle';
 import type { WorkflowNode, WaitConfig } from '../../../../server/engine/workflow/types';
 
 const WAIT_TYPES: Array<{ type: 'duration' | 'event' | 'condition'; label: string; icon: React.ReactNode }> = [

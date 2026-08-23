@@ -34,23 +34,21 @@ import {
   useTheme,
   CircularProgress,
 } from '@mui/material';
-import {
-  UploadFile as UploadIcon,
-  PlayArrow as PlayIcon,
-  Clear as ClearIcon,
-  Description as DescriptionIcon,
-  Image as ImageIcon,
-  TableChart as TableIcon,
-  AutoAwesome as SummarizeIcon,
-  Merge as MergeIcon,
-  CallSplit as SplitIcon,
-  Transform as ConvertIcon,
-  Folder as FolderIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Refresh as RefreshIcon,
-  Download as DownloadIcon,
-} from '@mui/icons-material';
+import UploadIcon from '@mui/icons-material/UploadFile';
+import PlayIcon from '@mui/icons-material/PlayArrow';
+import ClearIcon from '@mui/icons-material/Clear';
+import DescriptionIcon from '@mui/icons-material/Description';
+import ImageIcon from '@mui/icons-material/Image';
+import TableIcon from '@mui/icons-material/TableChart';
+import SummarizeIcon from '@mui/icons-material/AutoAwesome';
+import MergeIcon from '@mui/icons-material/Merge';
+import SplitIcon from '@mui/icons-material/CallSplit';
+import ConvertIcon from '@mui/icons-material/Transform';
+import FolderIcon from '@mui/icons-material/Folder';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import DownloadIcon from '@mui/icons-material/Download';
 import { useToast, ToastMessages } from '../../contexts/ToastContext';
 import { getGrayScale } from '../../constants/theme';
 import type {

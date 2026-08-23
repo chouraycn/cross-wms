@@ -23,17 +23,15 @@ import {
   useTheme,
   Divider,
 } from '@mui/material';
-import {
-  Search as SearchIcon,
-  Download as DownloadIcon,
-  Star as StarIcon,
-  TrendingUp as TrendingUpIcon,
-  Notifications as NotificationsIcon,
-  IntegrationInstructions as IntegrationIcon,
-  Analytics as AnalyticsIcon,
-  Close as CloseIcon,
-  CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/Search';
+import DownloadIcon from '@mui/icons-material/Download';
+import StarIcon from '@mui/icons-material/Star';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import IntegrationIcon from '@mui/icons-material/IntegrationInstructions';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import CloseIcon from '@mui/icons-material/Close';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {
   getTemplates,
   getTemplateCategories,

@@ -41,21 +41,19 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  Search as SearchIcon,
-  Refresh as RefreshIcon,
-  Edit as EditIcon,
-  Compare as CompareIcon,
-  Close as CloseIcon,
-  Person as PersonIcon,
-  Settings as SettingsIcon,
-  Description as DescriptionIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Wifi as WifiIcon,
-  WifiOff as WifiOffIcon,
-} from '@mui/icons-material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SearchIcon from '@mui/icons-material/Search';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import EditIcon from '@mui/icons-material/Edit';
+import CompareIcon from '@mui/icons-material/Compare';
+import CloseIcon from '@mui/icons-material/Close';
+import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
+import DescriptionIcon from '@mui/icons-material/Description';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import WifiIcon from '@mui/icons-material/Wifi';
+import WifiOffIcon from '@mui/icons-material/WifiOff';
 import { getGrayScale } from '../../constants/theme';
 import { useSoulHotReload, type SoulProfile } from '../../hooks/useSoulHotReload';
 

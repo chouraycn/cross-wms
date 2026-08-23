@@ -23,16 +23,14 @@ import {
   Alert,
   Snackbar,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  PlayArrow as PlayArrowIcon,
-  Download as DownloadIcon,
-  Upload as UploadIcon,
-  Store as StoreIcon,
-  Visibility as ViewIcon,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
+import StoreIcon from '@mui/icons-material/Store';
+import ViewIcon from '@mui/icons-material/Visibility';
 import { useNavigate } from 'react-router-dom';
 import WorkflowEditor from '../components/Workflow/WorkflowEditor';
 import type { Workflow, WorkflowTemplate } from '../../server/engine/workflow/types';

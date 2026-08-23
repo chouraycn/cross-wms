@@ -3,7 +3,9 @@ import {
   Box, Typography, Button, Paper, Stack, Chip, TextField, Select,
   MenuItem, FormControl, InputLabel, IconButton, CircularProgress,
 } from '@mui/material';
-import { Refresh, FilterAlt, Search } from '@mui/icons-material';
+import Refresh from '@mui/icons-material/Refresh';
+import FilterAlt from '@mui/icons-material/FilterAlt';
+import Search from '@mui/icons-material/Search';
 import type { SkillProposal, ProposalFilter, ProposalStatus, ProposalType } from '../../types/proposal';
 import type { GrayScale } from '../../constants/theme';
 import { getProposals } from '../../services/proposalApi';

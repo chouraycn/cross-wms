@@ -10,7 +10,10 @@
 
 import React, { useMemo } from 'react';
 import { Typography, Box, Stack, LinearProgress } from '@mui/material';
-import { InventoryOutlined, PendingOutlined, CheckCircleOutline, TrendingUp } from '@mui/icons-material';
+import InventoryOutlined from '@mui/icons-material/InventoryOutlined';
+import PendingOutlined from '@mui/icons-material/PendingOutlined';
+import CheckCircleOutline from '@mui/icons-material/CheckCircleOutline';
+import TrendingUp from '@mui/icons-material/TrendingUp';
 import type { InventoryCount, InventoryStats } from '../../types/wms';
 
 interface WmsInventoryStatsProps {
