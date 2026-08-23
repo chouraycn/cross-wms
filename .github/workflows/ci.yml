@@ -150,7 +150,15 @@ jobs:
             ${{ runner.os }}-vitest-
 
       - name: Run unit tests (vitest)
-        run: npx vitest run --reporter=basic --no-color 2>&1 | tail -200
+        run: npx vitest run --reporter=basic --reporter=json --outputFile=test-unit.json --no-color 2>&1 | tail -200
+
+      - name: Upload unit test metrics JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-metrics
+          path: test-unit.json
+          retention-days: 14
 
   engine-tests:
     name: Engine Tests (vitest engine config)
@@ -307,10 +315,18 @@ jobs:
       - name: Run knip
         run: npx knip --include files,dependencies,exports,types || true
 
-  e2e-api-test:
-    name: E2E API Tests (without Playwright)
+  # P1: 对话稳定性护栏（常驻硬门禁）
+  # 真实对话/聊天 e2e 测试落在 e2e/api/**（chat / agent-chat / staff-chat / channels / skills 等），
+  # 经 vitest.config.e2e.ts 的 include 自动纳入。原先的 e2e-api-test 指向匹配不到的
+  # glob（server/__tests__/e2e-*.test.ts）+ `|| true` 软门禁，等于对话稳定性从未进 CI。
+  # 现改为硬门禁：任何对话路径回归（如 tool_calls 400 / SSE error / 落库失败）直接阻断合并。
+  conversation-stability:
+    name: Conversation Stability (E2E API)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    env:
+      CI: true
+      ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
     steps:
       - name: Check out code
         uses: actions/checkout@v5
@@ -327,13 +343,67 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Run API E2E tests
-        run: npx vitest run --reporter=basic server/__tests__/e2e-*.test.ts || true
+      - name: Run conversation stability E2E (e2e/api + contracts)
+        run: npx vitest run --config=vitest.config.e2e.ts --reporter=json --outputFile=e2e-metrics.json --no-color
+
+      - name: Upload e2e metrics JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-metrics
+          path: e2e-metrics.json
+          retention-days: 14
+
+  # P1: 测试度量地基 — 聚合单测 + 对话 e2e 的 JSON 报告，持久化为 test-metrics.json 工件。
+  # 软门禁（continue-on-error）：度量趋势指标，不阻塞合并；供后续趋势看板/告警消费。
+  test-metrics:
+    name: Test Metrics Foundation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [test, conversation-stability]
+    if: always()
+    continue-on-error: true
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Download unit metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-metrics
+          path: ./metrics-in
+          continue-on-error: true
+
+      - name: Download e2e metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-metrics
+          path: ./metrics-in
+          continue-on-error: true
+
+      - name: Aggregate test metrics
+        run: node scripts/test-metrics.mjs ./metrics-in/test-unit.json ./metrics-in/e2e-metrics.json
+
+      - name: Upload consolidated test-metrics.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-metrics
+          path: test-metrics.json
+          retention-days: 30
 
   quality-summary:
     name: Quality Summary
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, test, e2e-api-test, static-checks]
+    needs: [lint, typecheck, test, conversation-stability, static-checks]
     if: github.event_name == 'pull_request'
     steps:
       - name: Check out code
@@ -406,7 +476,7 @@ jobs:
     # GitHub Actions 会等待 needs 中所有 job 达到最终状态后才评估 if；
     # 之前即使 if 不看 test 结果，仍要等 25 分钟的 vitest。现在只要
     # lint/typecheck/e2e-api/static-checks 完成就立刻启动 DMG 构建。
-    needs: [lint, typecheck, e2e-api-test, static-checks]
+    needs: [lint, typecheck, conversation-stability, static-checks]
     if: |
       !cancelled() &&
       github.event_name == 'push' &&
@@ -414,7 +484,7 @@ jobs:
       inputs.skip-dmg != 'true' &&
       needs.lint.result == 'success' &&
       needs.typecheck.result == 'success' &&
-      needs.e2e-api-test.result == 'success' &&
+      needs.conversation-stability.result == 'success' &&
       needs.static-checks.result == 'success'
     runs-on: macos-latest
     timeout-minutes: 45
