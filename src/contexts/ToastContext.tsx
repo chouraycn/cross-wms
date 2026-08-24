@@ -191,7 +191,7 @@ export function UnifiedToaster({
         info: <InfoIcon fontSize="small" />,
         warning: <WarningIcon fontSize="small" />,
         error: <CancelIcon fontSize="small" />,
-        loading: <AutorenewIcon fontSize="small" className="animate-spin" />,
+        loading: <AutorenewIcon fontSize="small" />,
       }}
       style={
         {
