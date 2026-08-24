@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   Grid,
   LinearProgress,
   Chip,
@@ -256,8 +254,7 @@ const MetricsPage: React.FC = () => {
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}` }}>
-                <CardContent>
+              <Box sx={{ backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}`, borderRadius: 2, p: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <SpeedIcon color="primary" />
                     <Typography variant="body2" color="text.secondary">CPU 使用率</Typography>
@@ -277,13 +274,11 @@ const MetricsPage: React.FC = () => {
                     {currentMetrics?.cpu?.cores ? `${currentMetrics.cpu.cores} 核` : '-'}
                   </Typography>
                   <MiniChart data={cpuHistory} color={theme.palette.primary.main} />
-                </CardContent>
-              </Card>
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}` }}>
-                <CardContent>
+              <Box sx={{ backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}`, borderRadius: 2, p: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <MemoryIcon color="secondary" />
                     <Typography variant="body2" color="text.secondary">内存使用</Typography>
@@ -305,13 +300,11 @@ const MetricsPage: React.FC = () => {
                       : '-'}
                   </Typography>
                   <MiniChart data={memoryHistory} color={theme.palette.secondary.main} />
-                </CardContent>
-              </Card>
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}` }}>
-                <CardContent>
+              <Box sx={{ backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}`, borderRadius: 2, p: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <ExtensionIcon color="info" />
                     <Typography variant="body2" color="text.secondary">磁盘使用</Typography>
@@ -333,13 +326,11 @@ const MetricsPage: React.FC = () => {
                       : '-'}
                   </Typography>
                   <MiniChart data={diskHistory} color={theme.palette.info.main} />
-                </CardContent>
-              </Card>
+              </Box>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}` }}>
-                <CardContent>
+              <Box sx={{ backgroundColor: gs.bgPanel, border: `1px solid ${gs.border}`, borderRadius: 2, p: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <NetworkCheckIcon color="success" />
                     <Typography variant="body2" color="text.secondary">网络 I/O</Typography>
@@ -359,8 +350,7 @@ const MetricsPage: React.FC = () => {
                     />
                   </Box>
                   <MiniChart data={networkHistory} color={theme.palette.success.main} />
-                </CardContent>
-              </Card>
+              </Box>
             </Grid>
           </Grid>
 

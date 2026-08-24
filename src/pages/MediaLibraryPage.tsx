@@ -20,7 +20,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  CardActionArea,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -486,9 +485,13 @@ export default function MediaLibraryPage() {
                         height: '100%',
                       }}
                     >
-                      <CardActionArea onClick={() => setPreviewAsset(asset)}>
+                      <Box
+                        component="div"
+                        onClick={() => setPreviewAsset(asset)}
+                        sx={{ cursor: 'pointer' }}
+                      >
                         {renderThumbnail(asset)}
-                      </CardActionArea>
+                      </Box>
                       <Tooltip title={asset.originalName}>
                         <Typography
                           variant="body2"

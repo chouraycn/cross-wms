@@ -2,15 +2,12 @@ import React, { createContext, useContext, useMemo, ReactNode } from 'react';
 import type { AlertColor } from '@mui/material';
 import type { CSSProperties } from 'react';
 import { toast, type ExternalToast } from 'sonner';
-import {
-  AlertCircleIcon,
-  CheckCircleIcon,
-  CircleCheckIcon,
-  InfoIcon,
-  Loader2Icon,
-  OctagonXIcon,
-  TriangleAlertIcon,
-} from 'lucide-react';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import InfoIcon from '@mui/icons-material/Info';
+import WarningIcon from '@mui/icons-material/Warning';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
@@ -45,7 +42,7 @@ const VARIANTS: Record<
   error: {
     container: { borderColor: '#f38989', bgcolor: '#fce7e7', color: '#d20b0b' },
     iconColor: '#d20b0b',
-    Icon: AlertCircleIcon,
+    Icon: ErrorOutlineIcon,
   },
 };
 
@@ -190,11 +187,11 @@ export function UnifiedToaster({
       position="bottom-center"
       offset={toastOffset}
       icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <CheckCircleIcon fontSize="small" />,
+        info: <InfoIcon fontSize="small" />,
+        warning: <WarningIcon fontSize="small" />,
+        error: <CancelIcon fontSize="small" />,
+        loading: <AutorenewIcon fontSize="small" className="animate-spin" />,
       }}
       style={
         {

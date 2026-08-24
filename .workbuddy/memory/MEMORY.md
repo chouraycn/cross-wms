@@ -12,65 +12,76 @@
 
 ### 构建与提交
 - 提交前 `NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit`（默认小堆 OOM exit137）；vite build 须绿
-- pre-commit 钩子（`.husky/pre-commit`）2026-08-11 已修为**仅 lint-staged**（对暂存文件 eslint），全量类型检查交给 CI。⚠️ 别再被旧记忆误导：**tsgo（@typescript/native-preview 7.0-dev）与两个 tsconfig 不兼容**（TS7 移除 `baseUrl`(TS5102)/`node10` resolution(TS5108)），`typecheck:fast` 已改为 `NODE_OPTIONS=8192 tsc --noEmit + node build-server.mjs`（2026-08-15）。本地可靠门禁 = web `tsc --noEmit`(8GB) + `node build-server.mjs`(esbuild)；`typecheck:server` 亦已改回 tsc。**server/tsconfig.json 的 `module` 必须为 `esnext`**（源码已用 import.meta.url，commonjs 会 TS1343 全灭——2026-08-15 实测）
-- 提交必须精确列文件名 add，禁 `git add -A`。`.workbuddy/` 被 gitignore，但 `MEMORY.md` 已跟踪——混进 `git add` 会报 ignored 让整条命令失败；`release/release.json` 同坑（`release/` 在 ignore 中但文件已跟踪，须 `git add -f`）
+- pre-commit 钩子（`.husky/pre-commit`）2026-08-11 已修为**仅 lint-staged**（对暂存文件 eslint），全量类型检查交给 CI
+- ⚠️ **tsgo 与两个 tsconfig 不兼容**（TS7 移除 baseUrl/node10 resolution），`typecheck:fast` = `NODE_OPTIONS=8192 tsc --noEmit + node build-server.mjs`。本地可靠门禁 = web `tsc --noEmit`(8GB) + `node build-server.mjs`(esbuild)。**server/tsconfig.json 的 `module` 必须为 `esnext`**
+- 提交必须精确列文件名 add，禁 `git add -A`。`.workbuddy/` 被 gitignore 但 `MEMORY.md` 已跟踪；`release/release.json` 须 `git add -f`
 - `.npmrc` 需 `legacy-peer-deps=true`；DMG 验证 `grep -c "关键字符串" server_dist/index.cjs`
-- **⚠️ DMG 构建触发本地沙箱 safe-delete 守卫（2026-08-23 实测）**：`scripts/package-mac-app.sh:43` 的 `rm -rf "$APP_ROOT"`（旧 `.app` 含数千文件）会被**本地沙箱 safe-delete 批量删除守卫**拦截（>50 文件需确认），非交互 shell 无法满足 → `RELEASE_EXIT=1`。**发版必须「关闭沙箱」跑**（`build:mac` / `package-mac-dist.sh` 用 `dangerouslyDisableSandbox`，而非默认沙箱）。CI 的 macos `build-dmg` 无此本地守卫，但其 `--skip-release` 只产 DMG 工件、**不建 GitHub Release**——故公开的 Release+DMG 仍需本地成功（`build:mac --no-bump`）。
+- ⚠️ **DMG 构建触发本地沙箱 safe-delete 守卫**（2026-08-23 实测）：`scripts/package-mac-app.sh:43` 的 `rm -rf "$APP_ROOT"`（旧 .app 含数千文件）会被守卫拦截。**发版必须「关闭沙箱」跑**（`build:mac` 用 `dangerouslyDisableSandbox`）。CI 的 macos `build-dmg` 只产工件不建 Release → Release+DMG 仍需本地成功
 - 本地分支无 upstream，推送须 `git push -u origin <branch>`
-- `git pull --rebase`（远端 ahead 导致 push rejected）后，**必须 `git show HEAD:<关键文件>` 验证关键改动未被静默改写**（rebase 无冲突报告 ≠ 改动完整）
+- `git pull --rebase` 后**必须 `git show HEAD:<关键文件>` 验证关键改动未被静默改写**
+- ⚠️ **esbuild 缓存陈旧会伪报 JSX 失衡**：判定三步（tsc 绿→单文件 esbuild 通过→清缓存重建通过），处置 `rm -rf node_modules/.vite node_modules/.cache/esbuild` 重跑
 
 ### 运行时
 - 日志统一 `server/logger.ts`，禁裸 `console.*`
 - WKWebView 兼容：禁 CSS `@keyframes`（用 inline transition）；禁 rAF（用 `setTimeout(fn,16)`）
-- frameless 窗口红黄绿圆点在 `WindowDragBar.tsx`，禁改按钮逻辑与 `pywebview_app.py` Api
-- ESM 禁 `import yaml from 'js-yaml'`，必须 `import * as yaml`（5.2.2 ESM-only 无 default → 加载 SyntaxError → 全部 API 502）
-- Vite 默认 `resolve.extensions` 顺序 `.ts` 在 `.tsx` 前：无扩展名 import 一个**只有 `.tsx`** 的模块会先请求 `.ts` 得 404 → 模块加载失败 → **整页白屏**。`tsc` 通过≠Vite 运行时能解析（同名仅 .tsx）。铁律：含 JSX 的模块用 `.tsx` 且 import **显式带 `.tsx`**（`allowImportingTsExtensions:true` 已开）；改完必用浏览器/Playwright 实跑确认非白屏
-- 原生 Skill：服务 ESM 运行 `require` 未定义 → 双加载路径都动态 `import`；验证走 `initSkillRuntime()` 真实启动路径
+- frameless 窗口红黄绿圆点在 `WindowDragBar.tsx`，禁改按钮逻辑
+- ESM 禁 `import yaml from 'js-yaml'`，必须 `import * as yaml`
+- Vite 默认 `resolve.extensions` 顺序 `.ts` 在 `.tsx` 前：含 JSX 的模块用 `.tsx` 且 import **显式带 `.tsx`**；改完必用浏览器实跑确认非白屏
+- 原生 Skill：服务 ESM 运行 `require` 未定义 → 双加载路径都动态 `import`
 
 ### SSE / 流式
 - 8 核心事件 init/text/thinking/tool_call/permission_request/done/error/debug；非核心走 `sendDebugSSE`
 - error 必走 `sendSSE`，否则前端卡"思考中"；catch 必发 error+done
 - 前端 `useChat`：done 处理器 cancelFrame 前同步刷新 thinkingBuffer；心跳超时 60s
-- tool_calls 配对：assistant(tool_calls) 后必紧跟 tool 消息，三层防御（pendingSystem → contextTruncate 重排 → aiClient 400 strip+降级）
-- SSE 读流唯一原语 `src/utils/sse/readSseResponse.ts`：新增消费方一律复用，禁手写 getReader 循环。必须 `decoder.decode()` 尾部 flush（漏了跨 chunk UTF-8 汉字流末尾被吞）
+- tool_calls 配对：三层防御（pendingSystem → contextTruncate 重排 → aiClient 400 strip+降级）
+- SSE 读流唯一原语 `src/utils/sse/readSseResponse.ts`：必须 `decoder.decode()` 尾部 flush
 
 ### 数字员工（StaffDeck）
-- 前端唯一事实来源 = `StaffDeck-main/frontend-enterprise`（shadcn/Tailwind），iframe 嵌入，禁止用 MUI 重写追求复刻
-- 响应剥包：`server/index.ts:394-419` 中间件对 `/api/staffdeck/*` 且 `code===0` 剥包；错误响应保留 envelope。禁止让嵌入前端依赖 `code` 字段
-- SSE 事件名必须用 StaffDeck 前端原生名（session.created→session_created、text.delta→stream_delta、tool.call→status{phase:'tool'}、末 stream_end+done），否则聊天假死。stream_delta 不落库
-- 技能 round-trip：`def.id` 用横线 `staff-${tenant}-${slug}`；`-`→`_` 生成工具名，`_`→`-` 还原。slug 含横线会错位报"未找到"
-- `StaffDeckPortal.tsx` 把 iframe 提升到路由树外常驻，`<Route path="/staffdeck" element={null}/>` 是有意设计（避免 remount 二次白屏），禁改
-- 构建：`scripts/build-staffdeck-app.mjs`（隔离 npm）；vite 需 `@tailwindcss/postcss` + `base:'/staffdeck-app/'`
-- dev：`vite.config.ts` 代理 `/staffdeck-app` 到 express(3001)；proxy target 用 `127.0.0.1`（localhost→::1 会 502）
-- 嵌入前端 `.env` 设 `VITE_TENANT_ID=default`
-- 配色权威事实源 = `StaffDeck-main/frontend-enterprise/src/styles.css`（单一 teal :root）；仓库 `src/styles/staffdeck.css`(变量桥) + `staffdeck-source.css`(移植源) 须与之对齐。`src/components/staff/` 仅 `i18n/` 被全应用复用，其余为员工域专有
+- 前端唯一事实来源 = `StaffDeck-main/frontend-enterprise`（shadcn/Tailwind），iframe 嵌入，禁止用 MUI 重写
+- 响应剥包：`server/index.ts:394-419` 对 `/api/staffdeck/*` 且 `code===0` 剥包
+- SSE 事件名必须用 StaffDeck 前端原生名（session.created→session_created 等），否则聊天假死
+- 技能 round-trip：`def.id` 用横线 `staff-${tenant}-${slug}`；`-`→`_` 生成工具名，`_`→`-` 还原
+- `StaffDeckPortal.tsx` iframe 常驻路由树外，`<Route path="/staffdeck" element={null}/>` 是有意设计，禁改
+- 配色权威事实源 = `StaffDeck-main/frontend-enterprise/src/styles.css`（单一 teal :root）
 
 ### HTTP 工具执行层
-- 统一原语 `server/infra/net/httpToolRequest.ts` → `executeGuardedHttpRequest()`：SSRF 守卫 + DNS 钉扎 + 超时 + JSON 解析 + 50K 截断
-- 两调用方共享执行层、各留功能层：`webTools.ts` 的 `web_api_call`（15s/禁私网）；`staffHttpToolBridge.ts`（30s/允许私网）。禁止删 `staffHttpToolBridge` 让 LLM 直接用 `web_api_call`（token 泄露 + 丢语义化工具名 + 内网不可达）
+- 统一原语 `server/infra/net/httpToolRequest.ts` → `executeGuardedHttpRequest()`
+- 两调用方：`webTools.ts` 的 `web_api_call`（15s/禁私网）；`staffHttpToolBridge.ts`（30s/允许私网）。禁止删 staffHttpToolBridge
+
+### 工具与代码修改
+- ⚠️ **codemod 不可靠**：multiline 裸对象截断丢 `{`；局部 `const ok` 遮蔽导入→运行时崩溃。API 信封迁移必须人工逐文件
+- ⚠️ **git stash 恢复坑**：多 stash 下裸 `git stash pop` 易戳错。pop 前 `git stash show --name-only stash@{N}` 确认。当前 stash@{0}=用户 metrics in-flight，勿动
 
 ## 分支拓扑与收口状态
-- `backup/wip-2026-08-04`(5976f186)：全量安全网。丢文件：`git cat-file -p 5976f186:<path>`
-- `sync/openclaw-2026-08-04`(5976f186)：**非上游流**，是本仓 2026-08-04 全量安全快照（commit msg "safety backup"），与 `backup/wip` 同一 commit。仓库只有 origin remote，无 openclaw 上游 remote，GitHub connector 全断。治理方针=**选择性 cherry-pick 非冲突通用修复 + 冲突走适配层，绝不幻想全量 merge**。runbook：`deliverables/2026-08-13-上游分叉治理runbook.md`；台账 `UPSTREAM_SYNC.md`
-- `refactor/staff-dedup-mcp`：**已退役**（2026-08-12，内容被 main 取代）
-- 整合收口：双套 UI 收敛**代码级收口**（删 39 MUI 员工页；`/staff /enterprise /workspace` → `/staffdeck`）；`tsc --noEmit` EXIT=0。`localStorage cdfknow.legacyStaffUI` 已失效。`vite.config.ts` 禁开 `emptyOutDir:true`（会删 `dist/staffdeck-app`）
+- `backup/wip-2026-08-04`(5976f186)：全量安全网
+- `sync/openclaw-2026-08-04`：本仓 08-04 全量快照，治理方针=选择性 cherry-pick + 适配层，绝不全量 merge
+- `refactor/staff-dedup-mcp`：已退役（08-12）
 - git 瘦身 ✅ 2026-08-06：`.git` 732M→89M(削88%)。⚠️ 全员须重 clone
+- `vite.config.ts` 禁开 `emptyOutDir:true`（会删 `dist/staffdeck-app`）
 
-## 收口进度（详见 `YYYY-MM-DD.md`）
-- **内置技能系统二期 ✅ 2026-08-15**（v1.7.222，commits `008b5091..36c247df`）：内置技能启停持久化全链路生效（skillToolBridge 工具列表+执行拦截 R2b-3 / keywordTriggerEngine 触发过滤 / matchingService 匹配过滤）；`/api/user-skills` 合并 skillRegistry 运行时技能 + `executable` 标注 + `/rescan`；前端 SkillsPage 合并 OpenClaw 技能 + `builtin-zh.ts` 中文词典 + `builtin-skill-metadata.ts` 图标/触发词推导 + 8 个新内置技能（brainstorm/code-review/doc-writer/task-planner/translator/wms_inventory_check/wms_outbound_create/wms_transfer_create）；R2b-4 停用技能禁 URL 注入绑定；历史会话切换消息保护（select-session 事件统一入口）；扩展详情/编辑 Dialog + loader.update + 内置扩展静态注册；飞书直连官方 SDK；全仓 ESM 对齐（import.meta.url / packages type:module）
-- **P2-1 API 契约对齐**：已收口 6 批 / 25 文件 / 251 调用（手工逐文件，codemod 不可靠）。核心规则见 `2026-08-12.md`。
-- **P1-2 UI 视觉统一（Card→Box）**：31/42 页完成（纯容器批已清零）；剩 **7 处 defer**：MetricsPage×4（用户任务 defer）+ DebugPage×2 + TracesPage×1（复合 `data-card` 结构，机械替换不安全）。桶装 `@mui/icons-material` 导入 20 文件 138 行已于 2026-08-23 改子路径默认导入并收口（提交 `254ac660`）。
-- **⚠️ codemod 不可靠(2026-08-11)**：multiline 裸对象截断丢 `{`；局部 `const ok` 遮蔽导入→运行时崩溃。API 信封迁移必须人工逐文件 + eslint 0 error + 查 `ok` 冲突。
-- **⚠️ git stash 恢复坑(2026-08-13)**：多 stash 下裸 `git stash pop` 易戳错。铁律补丁：pop 前 `git stash show --name-only stash@{N}` 确认；恢复用 `checkout stash@{N} -- <files>` 而非 pop。当前存 stash@{0}=用户 metrics in-flight，勿动。
-- **engine 测试隔离（CI 已收口，2026-08-15 核验）**：`vitest.config.engine.ts` + `test:engine` 就绪；`ci.yml` 自动 `build:packages` 生成 `openclaw/dist` → `test:engine` 硬门禁（无子模块时 `ensure-openclaw-mock.cjs` 兜底，`continue-on-error`）。本地 vendored 快照未触发 CI build、缺 `openclaw/dist` 属预期，无需手动构建。默认 `npm test` 不受影响。旧记「851 / 294 unresolved imports 阻塞」均已过时。
-- **P2-1 智能技能路由 ✅ 已实现并提交 · 实机验证可用**（2026-08-15 核验）：`server/engine/skillRouter.ts`(288行, 关键词保底+语义增强去重, ONNX未就绪自动降级) + `matchingService` + `server/engine/embedding-providers`(onnxProvider) + 语义 `server/routes/modelSelector.ts`(1106行)；已接入 `chatService.ts`/`runChatSession.ts` 主链路。`server/index.ts:1081` 启动预热 `initOnnxEmbedding()` → `getOnnxStatus()='ready'` → `isSemanticAvailable()=true` 启用 context 语义增强（非死锁，非永久降级）。熔断/退避由 `channel-circuit-breaker.ts`+`forced-consult-coordinator.ts`+`infra/retry.ts` 落地。**⚠️ 别再把 P2-1 当「待做」**。已补 `server/__tests__/skillRouter.test.ts`(11用例全绿)。**实机验证(2026-08-15, vitest 临时测试已删)**：本地 `assets/models/all-MiniLM-L6-v2`(model.onnx 22.9MB+tokenizer+vocab+config) 随包就绪，`onnxruntime-node` 已装，`initOnnxEmbedding()` 后 status=ready，`embedText` 产出真实 384 维语义向量，跨句余弦≈-0.05（确为真实语义向量）。
-- **P1-1 技能数据链路 ✅**：`server/engine/skillRuntimeBridge.ts`(P0-A) 已打通三份技能表示(builtin/user/folder)；openclaw `discovery` 基础设施已镜像(`server/engine/skills/discovery`)。
-- **⚠️ 旧记「工作区不洁 2,754 modified」已过时**：2026-08-15 实测 `git status --short` 仅 14 文件。勿再据此触发"清理前置"流程。
-- `server/engine`：11,537 .ts / 272.9 万行（测试占57%），不宜回退 submodule。
+## 已完成项（勿重复）
+- **内置技能系统二期 ✅**（v1.7.222）：启停持久化全链路 + 8 个内置技能 + 前端 SkillsPage
+- **P2-1 智能技能路由 ✅**：skillRouter(288行) + matchingService + ONNX embedding 384维实机验证可用。已接入主链路 + 11 单测
+- **P1-1 技能数据链路 ✅**：skillRuntimeBridge.ts 已打通三份技能表示
+- **P2-1 API 契约对齐 ✅**：6 批 / 25 文件 / 251 调用
+- **engine 测试隔离 ✅**（CI 已收口）：vitest.config.engine.ts + ensure-openclaw-mock.cjs 兜底
+- **API e2e ✅**：42 文件 / 374 测试全绿（`e2e/api/**`）
+- **WMS 6 技能真实化 ✅**（v1.7.241-243）：全部有 index.ts 执行层 + 对应 routes HTTP 路由
+- **P1 CI 硬门禁 ✅**（v1.7.243）：conversation-stability + test-metrics 地基
+- **P2 桶装导入清零 ✅**（v1.7.243）：20 文件 138 行改子路径
+- **UI Card→Box 页面9+组件34 ✅**（v1.7.236-238）
 
-## 统计陷阱 & e2e / knip
-- 上万文件 `wc -l` 须 `awk '$2=="total"{s+=$1}END{print s}'`（曾误报 engine 35.6万行，实 272.9万）
-- macOS 无 `timeout`/`cat -A`；zsh 下 `grep --include` 通配符 "no matches found"；全仓 grep 须 `--exclude-dir=engine`
-- API e2e（`e2e/api/**` 经 `vitest.config.e2e.ts`，真对话/聊天覆盖）：**374 测试全绿**（chat/agent-chat/staff-chat/channels/skills 等 42 文件）。`ci.yml` 的 `conversation-stability` 硬门禁即跑此套；`pr-quality-gate.yml` 的 `e2e-api-test` 跑同套 + 95% 阈值。旧记「86测84过」已过时。
+## 当前残留与待办
+- **v1.7.242/v1.7.243 DMG + Release 未发布**：pkg 已 bump 但无 tag、无 DMG（08-23 构建因 safe-delete 守卫中断）
+- **P2 Card→Box 残留**：MetricsPage×4（用户 defer）；staff DebugPage×2 + TracesPage×1（shadcn Card，按铁律不动）
+- **ToastContext 越界用 Lucide**：`src/contexts/ToastContext.tsx` 1 处，应改 MUI Icons
+- **MediaLibraryPage 残留 CardActionArea**：1 处
+- **应用层测试覆盖 ~14%**：54 测试 / 391 tsx
+- **knip 死代码**：前端 46 + 后端 179（不可盲删，须核验 extensions/scripts/dist）
+- **dsh 整合**：设计+demo 阶段，sandbox 侧轨不进 main
+
+## 统计陷阱
+- 上万文件 `wc -l` 须 `awk '$2=="total"{s+=$1}END{print s}'`
+- macOS 无 `timeout`/`cat -A`；zsh 下 `grep --include` 通配符 "no matches found"
+- 全仓 grep 须 `--exclude-dir=engine`
 - Playwright 清 `test-results/` 触发 safe-delete 守卫 → 绕过 `--output=/tmp/pw-xxx`
-- knip `ignoreFiles` 含 `scripts/**` 未覆盖 `extensions/` → **`Unused dependencies` 列表不可信、不可盲删**；删依赖前须手动核验 `extensions/`、`scripts/`、`build-server.mjs` external、dist 产物
