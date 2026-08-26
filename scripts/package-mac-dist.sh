@@ -172,12 +172,17 @@ fi
 echo "📝 Generating release.json..."
 mkdir -p "$ROOT_DIR/release"
 
+# dmgUrl 仓库名从 git remote 推导（避免硬编码 CDFKnow 与真实仓库 cross-wms 不一致，
+# 否则自动更新器会 404）。remote 形如 git@github.com:chouraycn/cross-wms.git
+RELEASE_REPO=$(git remote get-url origin 2>/dev/null | sed -E 's#.*github\.com[:/]##; s#\.git$##' | head -1)
+RELEASE_REPO="${RELEASE_REPO:-chouraycn/CDFKnow}"
+
 cat > "$ROOT_DIR/release/release.json" <<RELJSON
 {
   "version": "$VERSION",
   "channel": "stable",
   "pubDate": "$(date -u +"%Y-%m-%d")",
-  "dmgUrl": "https://github.com/chouraycn/CDFKnow/releases/download/v${VERSION}/CDF%20Know%20Clow-${VERSION}.dmg",
+  "dmgUrl": "https://github.com/${RELEASE_REPO}/releases/download/v${VERSION}/CDF%20Know%20Clow-${VERSION}.dmg",
   "minVersion": "1.0.0"
 }
 RELJSON
