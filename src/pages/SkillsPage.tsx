@@ -1474,7 +1474,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
             </>
           ) : manageSubTab === 'chains' ? (
             <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 220px)' }}>
-              <Box sx={{ width: 240, flexShrink: 0, borderRight: `1px solid ${gs.border}`, pr: 2, overflow: 'auto' }}>
+              <Box sx={{ width: 240, flexShrink: 0, borderRight: `1px solid ${gs.border}`, pr: 2, overflow: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
                 <ChainList
                   chains={chains}
                   selectedId={selectedChainId}
@@ -1482,7 +1482,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                   onCreate={handleCreateChain}
                 />
               </Box>
-              <Box sx={{ flex: 1, overflow: 'auto', pr: 1 }}>
+              <Box sx={{ flex: 1, overflow: 'auto', pr: 1, WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
                 {editingChain ? (
                   <ChainBuilder
                     chain={editingChain}
@@ -1506,7 +1506,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
               </Box>
             </Box>
           ) : manageSubTab === 'workshop' ? (
-            <Box sx={{ height: 'calc(100vh - 220px)', overflow: 'auto' }}>
+            <Box sx={{ height: 'calc(100vh - 220px)', overflow: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
               <WorkshopPanel gs={gs} isDark={isDark} />
             </Box>
           ) : (

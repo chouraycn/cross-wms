@@ -123,12 +123,27 @@ export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '',
   if (!anchorEl) return null;
 
   const anchorRect = anchorEl.getBoundingClientRect();
-  // 从锚点上方弹出，水平居中（限制不超出视口）
   const popupWidth = slashMode ? 400 : 320;
   const popupLeft = Math.max(8, Math.min(
     anchorRect.left + (anchorRect.width - popupWidth) / 2,
     window.innerWidth - popupWidth - 8
   ));
+
+  // 视口内动态定位：优先在锚点上方弹出；上方空间不足时改到下方。
+  // 用 top + maxHeight 显式约束，避免原 bottom:calc(...) 在输入框贴近顶部时
+  // 把弹层顶出视口（WKWebView 中 fixed 层被裁切后内部 overflow 滚动失灵）。
+  const vh = window.innerHeight;
+  const GAP = 8;
+  const spaceAbove = anchorRect.top;
+  const spaceBelow = vh - anchorRect.bottom;
+  const placeAbove = spaceAbove >= 240 || spaceAbove >= spaceBelow;
+  const maxPopupHeight = Math.max(
+    160,
+    Math.min(360, (placeAbove ? spaceAbove : spaceBelow) - GAP, vh - 16)
+  );
+  const popupTop = placeAbove
+    ? Math.max(8, anchorRect.top - maxPopupHeight - GAP)
+    : anchorRect.bottom + GAP;
 
   return (
     <Paper
@@ -136,11 +151,14 @@ export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '',
       elevation={4}
       sx={{
         position: 'fixed',
-        bottom: `calc(100vh - ${anchorRect.top}px + 8)`,
+        top: popupTop,
         left: popupLeft,
         width: popupWidth,
-        maxHeight: 360,
-        overflow: 'auto',
+        maxHeight: maxPopupHeight,
+        overflowY: 'auto',
+        // WKWebView 兼容：启用惯性滚动 + 锁定滚动链，否则 fixed 弹层内 overflow 不滚动
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehavior: 'contain',
         zIndex: 1400,
         borderRadius: '10px',
         border: `1px solid ${gs.border}`,

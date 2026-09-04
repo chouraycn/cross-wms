@@ -32,6 +32,7 @@
 - ESM 禁 `import yaml from 'js-yaml'`，必须 `import * as yaml`
 - Vite 默认 `resolve.extensions` 顺序 `.ts` 在 `.tsx` 前：含 JSX 的模块用 `.tsx` 且 import **显式带 `.tsx`**；改完必用浏览器实跑确认非白屏
 - 原生 Skill：服务 ESM 运行 `require` 未定义 → 双加载路径都动态 `import`
+- ⚠️ **端口冲突白屏**（2026-09-03 已根治）：`CDFKnowHarness.app`（dsh demo）与 `CDFKnowClow.app` 都默认 `serverPort=3001` 会冲突。已根治：Harness 的 `~/Library/Application Support/CDFKnowHarness/config.json` 改 `serverPort=3002`，主产品 CDFKnowClow 保持 3001，两应用可共存。诊断：`lsof -iTCP -sTCP:LISTEN -P -n | grep :3001` + `curl localhost:3001/index.html | grep -oE '<title>.*</title>'` 辨归属；处置 SIGTERM 无效须 `kill -9`
 
 ### SSE / 流式
 - 8 核心事件 init/text/thinking/tool_call/permission_request/done/error/debug；非核心走 `sendDebugSSE`
@@ -76,7 +77,7 @@
 - **UI Card→Box 页面9+组件34 ✅**（v1.7.236-238）
 
 ## 当前残留与待办
-- **v1.7.243 发版闭合进行中**：safe-delete 双守卫（rm .app + Vite clean-stale-assets）+ WKWebView 基线误判 + 单测 tsc 门禁（afterEach 未导入）均已解除；本地 `build:mac -- --no-bump` 重建中，成功后 curl 推 main + tag v1.7.243 + 建 GitHub Release 上传 DMG/release.json（脚本自动把 release.json 更到 1.7.243）。⚠️ 本地无证书 → DMG 未签名（生产签名须 CI 配 SIGN_IDENTITY）
+- **v1.7.243 发版闭合【git 侧已完成 / GitHub Release 卡 token】**：DMG(197M) 已生成、`release.json` 已更 1.7.243（`dmgUrl`→`chouraycn/cross-wms`）、`main` 已推、`tag v1.7.243` 已前移 `77fe960d`。仅剩 **GitHub Release + 上传 DMG/release.json** 因 `.zshrc` 的 `GITHUB_TOKEN` 返回 401 失效未完成；待用户提供有效 token（经典 PAT `repo` 或 fine-grained `release:write`）后 `curl` 建 Release。⚠️ 本地无证书 → DMG 未签名（生产签名须 CI 配 SIGN_IDENTITY）
 - **P2 Card→Box 残留**：仅剩 staff DebugPage×2 + TracesPage×1（shadcn Card，按铁律不动）；主 MUI 应用页面层已清零（MetricsPage×4 → Box，10a3bb96）
 - **ToastContext 越界用 Lucide**：✅ 已改 MUI Icons（b8862ea7，并移除 animate-spin）
 - **MediaLibraryPage 残留 CardActionArea**：✅ 已改 Box onClick（10a3bb96）
