@@ -75,7 +75,7 @@ import {
   visibleEmployeeAgents,
 } from '../employee';
 import { useClientPagination } from '../hooks/useClientPagination';
-import { renderMarkdownBlocks } from './chat/chatHelpers';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { getDateLocale } from '@/i18n';
 import type {
   KnowledgeBaseRead,
@@ -2607,11 +2607,7 @@ function WikiConceptViewer({ concept }: { concept: KnowledgeConceptRead }) {
 
 function MarkdownPreview({ markdown }: { markdown: string }) {
   const normalized = normalizeMarkdownForDisplay(markdown);
-  return (
-    <div className="knowledge-markdown-preview">
-      {renderMarkdownBlocks(normalized || '暂无内容')}
-    </div>
-  );
+  return <MarkdownRenderer markdown={normalized || '暂无内容'} className="knowledge-markdown-preview" />;
 }
 
 function stripOkfFrontmatter(markdown: string) {

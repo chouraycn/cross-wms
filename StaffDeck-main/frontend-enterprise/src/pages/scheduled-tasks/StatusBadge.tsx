@@ -1,19 +1,21 @@
 import type { ReactNode } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-import { BADGE_TONE_CLASS, RUN_STATUS_BADGE, TASK_STATUS_BADGE, type BadgeTone } from './shared';
+import { RUN_STATUS_BADGE, TASK_STATUS_BADGE, type BadgeTone } from './shared';
 
-export function StatusBadge({ tone, children }: { tone: BadgeTone; children: ReactNode }) {
+export function StatusBadge({ tone, children, className }: { tone: BadgeTone; children: ReactNode; className?: string }) {
   return (
-    <span
+    <Badge
+      variant={tone}
       className={cn(
-        'inline-flex items-center rounded-full px-[12px] py-[4px] text-[10px] leading-none whitespace-nowrap capitalize',
-        BADGE_TONE_CLASS[tone],
+        '!inline-flex !items-center !justify-center !rounded-full !px-[12px] !py-[4px] !text-[10px] !h-auto !capitalize !whitespace-nowrap !border-transparent',
+        className,
       )}
     >
       {children}
-    </span>
+    </Badge>
   );
 }
 

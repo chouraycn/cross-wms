@@ -13,7 +13,7 @@ import { Router, type Request, type Response } from 'express';
 import { DEFAULT_TENANT_ID } from '../../db-staff.js';
 import type { ModelConfigRow, ModelConfigRead } from '../../types/staff.js';
 import * as modelConfigDao from '../../dao/staff/staffModelConfigDao.js';
-import { complete } from '../../engine/llm/index.js';
+import { logger } from '../../logger.js';
 
 const router = Router();
 
@@ -278,11 +278,130 @@ router.post('/:config_id/set-default', (req: Request, res: Response) => {
   }
 });
 
-// ===================== POST /:config_id/test — 测试模型连接（stub） =====================
+// ===================== 真实模型连通性探测 =====================
+
+/** 拼接 base URL 与路径，自动规整多余斜杠 */
+function joinUrl(base: string, path: string): string {
+  const trimmed = base.replace(/\/+$/, '');
+  const p = path.startsWith('/') ? path : `/${path}`;
+  return `${trimmed}${p}`;
+}
+
+interface ProbeResult {
+  ok: boolean;
+  status?: number;
+  latencyMs: number;
+  output: string | null;
+  error?: string;
+  errorCode?: string;
+}
+
+/**
+ * 按配置自身的 provider / baseUrl / apiKey / model 发起一次最小探测请求。
+ * 支持三种协议：openai_chat_completions（OpenAI 兼容）、anthropic_messages、gemini_generate_content。
+ * 不依赖环境变量中的全局 API Key，严格使用配置内落库的凭据，因此能真实反映该配置是否可达。
+ */
+async function probeModelConnectivity(row: ModelConfigRow, apiKey: string): Promise<ProbeResult> {
+  const PROBE_TIMEOUT_MS = 30_000;
+  const start = Date.now();
+  const protocol = row.api_protocol || 'openai_chat_completions';
+  const model = row.model;
+
+  let url: string;
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  let body: Record<string, any>;
+
+  if (protocol === 'anthropic_messages') {
+    const base = row.base_url || 'https://api.anthropic.com';
+    url = joinUrl(base, '/v1/messages');
+    headers['x-api-key'] = apiKey;
+    headers['anthropic-version'] = '2023-06-01';
+    body = { model, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] };
+  } else if (protocol === 'gemini_generate_content') {
+    const base = row.base_url || 'https://generativelanguage.googleapis.com/v1beta';
+    url = `${joinUrl(base, `/models/${encodeURIComponent(model)}:generateContent`)}?key=${encodeURIComponent(apiKey)}`;
+    body = {
+      contents: [{ role: 'user', parts: [{ text: 'ping' }] }],
+      generationConfig: { maxOutputTokens: 1 },
+    };
+  } else {
+    // openai_chat_completions（默认，OpenAI 兼容协议）
+    const base = row.base_url || 'https://api.openai.com/v1';
+    url = joinUrl(base, '/chat/completions');
+    headers['authorization'] = `Bearer ${apiKey}`;
+    body = { model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 1, stream: false };
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const latencyMs = Date.now() - start;
+    const text = await resp.text();
+    if (!resp.ok) {
+      let detail = text.slice(0, 500);
+      try {
+        const j = JSON.parse(text);
+        if (j?.error?.message) detail = String(j.error.message);
+      } catch {
+        /* 保留原始文本 */
+      }
+      return {
+        ok: false,
+        status: resp.status,
+        latencyMs,
+        output: null,
+        error: `HTTP ${resp.status}: ${detail}`,
+        errorCode: 'PROVIDER_ERROR',
+      };
+    }
+    let output: string | null = null;
+    try {
+      const j = JSON.parse(text);
+      if (protocol === 'anthropic_messages') {
+        output = j?.content?.[0]?.text ?? null;
+      } else if (protocol === 'gemini_generate_content') {
+        output = j?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+      } else {
+        output = j?.choices?.[0]?.message?.content ?? j?.choices?.[0]?.text ?? null;
+      }
+    } catch {
+      output = text.slice(0, 200);
+    }
+    return {
+      ok: true,
+      status: resp.status,
+      latencyMs,
+      output: output !== null ? String(output).slice(0, 200) : null,
+    };
+  } catch (e) {
+    const latencyMs = Date.now() - start;
+    const msg = e instanceof Error ? e.message : String(e);
+    const aborted = msg.includes('aborted') || msg.includes('The operation was aborted');
+    return {
+      ok: false,
+      latencyMs,
+      output: null,
+      error: aborted ? `探测超时（>${PROBE_TIMEOUT_MS}ms）` : msg,
+      errorCode: aborted ? 'TIMEOUT' : 'NETWORK_ERROR',
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ===================== POST /:config_id/test — 测试模型连接（真实连通性探测） =====================
 
 router.post('/:config_id/test', async (req: Request, res: Response) => {
   const tenantId = (req.body.tenant_id as string) || (req.query.tenant_id as string) || DEFAULT_TENANT_ID;
   const configId = req.params.config_id;
+  const activateIfInitial =
+    String(req.query.activate_if_initial) === 'true' || req.body?.activate_if_initial === true;
 
   const existing = modelConfigDao.getModelConfigById(tenantId, configId);
   if (!existing) {
@@ -290,44 +409,120 @@ router.post('/:config_id/test', async (req: Request, res: Response) => {
     return;
   }
 
-  // 真实连通性探测：用该配置引用的模型做一次最短文本补全（依赖环境变量中的 API Key）
-  try {
-    if (!existing.model) {
-      throw new Error('该配置未指定 model，无法探测');
-    }
-    const output = await complete({
-      model: existing.model,
-      messages: [{ role: 'user', content: 'ping' }],
-    });
-    res.json({
-      code: 0,
-      data: {
-        success: true,
-        message: '连接成功',
-        output: output.slice(0, 200),
-        activated: true,
-        trust_status: existing.trust_status,
-        attempt_status: 'succeeded',
-        capabilities: [],
-      },
-      message: 'ok',
-    });
-  } catch (e) {
-    const msg = (e as Error).message;
+  const apiKey = decryptApiKey(existing.api_key_encrypted);
+  if (!apiKey) {
     res.json({
       code: 0,
       data: {
         success: false,
-        message: `连接失败：${msg}`,
+        message: '该配置未配置有效的 API Key，无法探测',
         output: null,
         activated: false,
         trust_status: existing.trust_status,
         attempt_status: 'failed',
         capabilities: [],
+        latency_ms: 0,
       },
       message: 'ok',
     });
+    return;
   }
+  if (!existing.model) {
+    res.json({
+      code: 0,
+      data: {
+        success: false,
+        message: '该配置未指定 model，无法探测',
+        output: null,
+        activated: false,
+        trust_status: existing.trust_status,
+        attempt_status: 'failed',
+        capabilities: [],
+        latency_ms: 0,
+      },
+      message: 'ok',
+    });
+    return;
+  }
+
+  const startedAt = Math.floor(Date.now() / 1000);
+  const probe = await probeModelConnectivity(existing, apiKey);
+  logger.info('[StaffModelConfig] 模型连通性探测', {
+    configId,
+    provider: existing.provider,
+    protocol: existing.api_protocol,
+    ok: probe.ok,
+    status: probe.status,
+    latencyMs: probe.latencyMs,
+  });
+
+  if (probe.ok) {
+    // 真实验证通过：先落库验证状态 + 启用该配置（set-default 守卫要求 verified+enabled）
+    const updatedRow = modelConfigDao.updateModelConfig(tenantId, configId, {
+      trust_status: 'verified',
+      verified_at: Math.floor(Date.now() / 1000),
+      verification_started_at: startedAt,
+      verification_attempt_status: 'succeeded',
+      verification_attempt_error_code: null,
+      verified_fingerprint: `${existing.provider}:${existing.model}`,
+      enabled: true,
+      config_revision: existing.config_revision + 1,
+    });
+    // 若要求初始化即激活，且当前租户无默认配置，则将该配置设为默认
+    let becameDefault = false;
+    if (activateIfInitial) {
+      const hasDefault = modelConfigDao
+        .listModelConfigs(tenantId)
+        .some((c) => c.id !== configId && c.is_default === 1);
+      if (!hasDefault) {
+        const def = modelConfigDao.setDefaultModelConfig(tenantId, configId);
+        becameDefault = !!def;
+      }
+    }
+    const read = modelConfigReadWithMask(
+      modelConfigDao.getModelConfigById(tenantId, configId) ?? updatedRow ?? existing,
+    );
+    res.json({
+      code: 0,
+      data: {
+        success: true,
+        message: becameDefault ? '连接成功，已启用并设为默认模型' : '连接成功',
+        output: probe.output,
+        activated: becameDefault,
+        trust_status: 'verified',
+        attempt_status: 'succeeded',
+        capabilities: [],
+        latency_ms: probe.latencyMs,
+        model: read,
+      },
+      message: 'ok',
+    });
+    return;
+  }
+
+  // 探测失败：记录失败状态，保留既有启用状态（不自动禁用，避免误伤）
+  modelConfigDao.updateModelConfig(tenantId, configId, {
+    verified_at: null,
+    verification_started_at: startedAt,
+    verification_attempt_status: 'failed',
+    verification_attempt_error_code: probe.errorCode ?? 'PROVIDER_ERROR',
+    config_revision: existing.config_revision + 1,
+  });
+  res.json({
+    code: 0,
+    data: {
+      success: false,
+      message: `连接失败：${probe.error ?? '未知错误'}`,
+      output: null,
+      activated: false,
+      trust_status: existing.trust_status,
+      attempt_status: 'failed',
+      capabilities: [],
+      latency_ms: probe.latencyMs,
+      error_code: probe.errorCode,
+    },
+    message: 'ok',
+  });
 });
 
 export default router;

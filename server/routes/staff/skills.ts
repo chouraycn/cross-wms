@@ -317,6 +317,62 @@ async function runDistill(
   return draft;
 }
 
+// ===================== rewrite 复用蒸馏管线 =====================
+/**
+ * rewrite 与 distill 同源：都是"基于一段诉求生成/改写技能草稿（DistillDraft）"。
+ * 这里复用 runDistill 管线，把已有 skill 的现有内容 + 改写指令拼成提示词喂入，
+ * 产出的 draft_skill 直接对齐前端 DistillPage rewrite/stream 的期望结构。
+ *
+ * 注意：runDistill 原生 emit 的事件名是 `chunk`，而前端 rewrite 处理器期望 `message_chunk`，
+ * 因此调用方在传入 write 时应做一层 chunk→message_chunk 的映射（见各 rewrite 路由）。
+ */
+async function runRewrite(
+  skillId: string,
+  tenantId: string,
+  params: Record<string, any>,
+  write: (event: string, data: any) => void,
+  isCancelled: () => boolean,
+): Promise<DistillDraft> {
+  const skill = skillDao.getSkillBySkillId(tenantId, skillId);
+  if (!skill) throw new Error('skill 不存在');
+
+  // 读取现有 skill 内容，作为改写上下文
+  let existing: Record<string, any> = {};
+  try {
+    existing = skill.content_json ? JSON.parse(skill.content_json) : {};
+  } catch {
+    existing = {};
+  }
+  const instruction =
+    (params.instruction as string) || (params.instructions as string) || '优化语言、补充细节、改善结构';
+  const goals = Array.isArray(existing.goal)
+    ? existing.goal.filter(Boolean)
+    : existing.goal
+      ? [existing.goal]
+      : [];
+  const prompt = [
+    `现有技能「${skill.name}」：${typeof existing.description === 'string' ? existing.description : ''}`,
+    goals.length ? `当前目标：${goals.join('；')}` : '',
+    `改写指令：${instruction}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const draft = await runDistill(
+    `rewrite-${skillId}-${Date.now()}`,
+    {
+      prompt,
+      name: skill.name,
+      business_domain: skill.business_domain || undefined,
+      tool_suggestions: (params.tool_suggestions as string[]) || [],
+    },
+    write,
+    isCancelled,
+  );
+  draft.skill_id = skillId;
+  return draft;
+}
+
 // ===================== POST /distill — 同步蒸馏 =====================
 router.post('/distill', async (req: Request, res: Response) => {
   const write = (_event: string, _data: any) => {
@@ -530,11 +586,11 @@ router.post('/:skillId/draft', (req: Request, res: Response) => {
 
 // ===================== POST /:skillId/rewrite — 同步重写 =====================
 /**
- * 对已有 skill 内容进行重写优化。
- * Body: { instructions?: string, fields?: string[] }
- * 返回重写后的 skill content。
+ * 对已有 skill 进行重写优化（复用蒸馏管线 runDistill）。
+ * Body: { instructions?: string, instruction?: string, tool_suggestions?: string[] }
+ * 返回重写后的 draft_skill（与 distill 同源结构）。
  */
-router.post('/:skillId/rewrite', (req: Request, res: Response) => {
+router.post('/:skillId/rewrite', async (req: Request, res: Response) => {
   try {
     const tenantId = tenantOf(req);
     const { skillId } = req.params;
@@ -543,58 +599,29 @@ router.post('/:skillId/rewrite', (req: Request, res: Response) => {
       res.status(404).json({ code: 404, data: null, message: 'skill 不存在' });
       return;
     }
-
-    const instructions = (req.body?.instructions as string)?.trim() || '优化语言、补充细节、改善结构';
-    const fields = (req.body?.fields as string[]) || ['description', 'content'];
-
-    // 读取现有 content
-    let content: Record<string, any> = {};
-    try {
-      content = skill.content_json ? JSON.parse(skill.content_json) : {};
-    } catch { content = {}; }
-
-    // 基于指令对 content 做重写（规则化改写，非 AI 调用）
-    const rewritten: Record<string, any> = { ...content };
-    const warnings: string[] = [];
-
-    if (fields.includes('description') && typeof content.description === 'string') {
-      const desc = content.description as string;
-      rewritten.description = desc.trim().replace(/\s+/g, ' ');
-      if (desc.length < 10) {
-        rewritten.description = `${desc.trim()}（已补充：请根据实际业务场景完善此描述）`;
-        warnings.push('description 过短，已补充提示');
-      }
-    }
-
-    if (fields.includes('content') && typeof content.content === 'string') {
-      const text = content.content as string;
-      // 基础格式优化：去除多余空行、统一标点
-      rewritten.content = text
-        .replace(/\n{3,}/g, '\n\n')
-        .replace(/[ \t]+\n/g, '\n')
-        .trim();
-    }
-
-    // 更新到数据库
-    const updated = skillDao.updateSkill(tenantId, skillId, {
-      content: rewritten,
-    });
-
-    if (!updated) {
-      res.status(500).json({ code: 500, data: null, message: '更新失败' });
-      return;
-    }
-
-    logger.info(`[StaffSkills] /rewrite: skill ${skillId} 重写完成 (instructions: ${instructions.slice(0, 40)})`);
-
+    // 同步模式不推送增量事件，直接复用蒸馏管线产出 draft_skill
+    const noop = (_event: string, _data: any) => {};
+    const draft = await runRewrite(
+      skillId,
+      tenantId,
+      {
+        instruction: req.body?.instructions || req.body?.instruction,
+        tool_suggestions: req.body?.tool_suggestions,
+      },
+      noop,
+      () => false,
+    );
+    const appliedInstructions =
+      (req.body?.instructions as string) || (req.body?.instruction as string) || '优化语言、补充细节、改善结构';
+    logger.info(`[StaffSkills] /rewrite: skill ${skillId} 重写完成 (instructions: ${appliedInstructions.slice(0, 40)})`);
     res.json({
       code: 0,
       data: {
         implemented: true,
         skill_id: skillId,
-        content: rewritten,
-        warnings,
-        applied_instructions: instructions,
+        draft_skill: draft,
+        warnings: [],
+        applied_instructions: appliedInstructions,
       },
       message: 'ok',
     });
@@ -617,41 +644,27 @@ router.post('/:skillId/rewrite/jobs', (req: Request, res: Response) => {
 
     const jobId = streamJobs.createJob('rewrite', {
       skill_id: skillId,
-      instructions: req.body?.instructions || '',
-      fields: req.body?.fields || ['description', 'content'],
+      instructions: req.body?.instructions || req.body?.instruction || '',
     });
 
-    // 异步执行重写（复用 rewrite 逻辑）
+    // 异步执行重写（复用蒸馏管线 runDistill），chunk→message_chunk 对齐前端
     void (async () => {
-      const write = (event: string, data: any) => streamJobs.append(jobId, event, data);
+      const write = (event: string, data: any) => {
+        if (event === 'chunk') streamJobs.append(jobId, 'message_chunk', data);
+        else streamJobs.append(jobId, event, data);
+      };
       try {
         write('job_attached', { job_id: jobId, status: 'running', skill_id: skillId });
-        write('status', { text: '正在分析现有 skill 内容…' });
-        await sleep(300);
-
-        let content: Record<string, any> = {};
-        try {
-          content = skill.content_json ? JSON.parse(skill.content_json) : {};
-        } catch { content = {}; }
-
-        write('status', { text: '正在重写内容…' });
-        await sleep(300);
-
-        const rewritten = { ...content };
-        if (typeof content.description === 'string') {
-          rewritten.description = (content.description as string).trim().replace(/\s+/g, ' ');
-        }
-        if (typeof content.content === 'string') {
-          rewritten.content = (content.content as string)
-            .replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
-        }
-
-        const updated = skillDao.updateSkill(tenantId, skillId, { content: rewritten });
-        write('complete', {
-          skill_id: skillId,
-          content: rewritten,
-          warnings: [],
-        });
+        await runRewrite(
+          skillId,
+          tenantId,
+          {
+            instruction: req.body?.instructions || req.body?.instruction,
+            tool_suggestions: req.body?.tool_suggestions,
+          },
+          write,
+          () => streamJobs.isCancelled(jobId),
+        );
         streamJobs.complete(jobId);
       } catch (e) {
         streamJobs.fail(jobId, (e as Error).message);
@@ -691,45 +704,29 @@ router.post('/:skillId/rewrite/stream', async (req: Request, res: Response) => {
       streamJobs.append(jobId, event, data);
       if (!closed) res.write(sse(event, data));
     };
+    // runDistill 原生 emit `chunk`，前端 rewrite 处理器期望 `message_chunk`；
+    // 同时把 draft_skill.skill_id 钉回当前 skill，避免前端 lockSkillIdForDraft 失配。
+    const rewriteWrite = (event: string, data: any) => {
+      if (event === 'complete' && data?.draft_skill) {
+        data.draft_skill = { ...data.draft_skill, skill_id: skillId };
+      }
+      if (event === 'chunk') write('message_chunk', data);
+      else write(event, data);
+    };
     res.on('close', () => { closed = true; });
 
     write('job_attached', { job_id: jobId, status: 'running', skill_id: skillId });
-    write('status', { text: '正在分析现有 skill 内容…' });
-    await sleep(300);
-    if (closed || streamJobs.isCancelled(jobId)) { streamJobs.fail(jobId, 'cancelled'); res.end(); return; }
-
-    let content: Record<string, any> = {};
-    try {
-      content = skill.content_json ? JSON.parse(skill.content_json) : {};
-    } catch { content = {}; }
-
-    write('status', { text: '正在重写内容…' });
-    await sleep(300);
-    if (closed || streamJobs.isCancelled(jobId)) { streamJobs.fail(jobId, 'cancelled'); res.end(); return; }
-
-    const rewritten = { ...content };
-    if (typeof content.description === 'string') {
-      rewritten.description = (content.description as string).trim().replace(/\s+/g, ' ');
-    }
-    if (typeof content.content === 'string') {
-      rewritten.content = (content.content as string)
-        .replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
-    }
-
-    // 流式输出重写后的内容
-    const rewrittenText = typeof rewritten.content === 'string' ? rewritten.content : JSON.stringify(rewritten, null, 2);
-    for (const seg of chunkText(rewrittenText, 28)) {
-      if (closed) break;
-      write('chunk', { content: seg });
-      await sleep(50);
-    }
-
-    const updated = skillDao.updateSkill(tenantId, skillId, { content: rewritten });
-    write('complete', {
-      skill_id: skillId,
-      content: rewritten,
-      warnings: [],
-    });
+    await runRewrite(
+      skillId,
+      tenantId,
+      {
+        instruction: req.body?.instruction || req.body?.instructions,
+        tool_suggestions: req.body?.tool_suggestions,
+        target_paths: req.body?.target_paths,
+      },
+      rewriteWrite,
+      () => closed || streamJobs.isCancelled(jobId),
+    );
 
     if (!closed) {
       streamJobs.complete(jobId);

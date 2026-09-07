@@ -315,12 +315,27 @@ router.post('/jobs/:jobId/cancel', (req: Request, res: Response) => {
     res.status(404).json({ code: 404, data: null, message: 'job 不存在' });
     return;
   }
-  // 取消 job：更新状态为 cancelled，并尝试中止运行中的 worker
+  // 已取消：幂等返回，不重复处理
+  if (existing.status === 'cancelled') {
+    res.json({ code: 0, data: existing, message: 'ok' });
+    return;
+  }
+  // 已结束（成功/失败）：真实取消无意义，直接拒绝
+  if (existing.status === 'done' || existing.status === 'failed') {
+    res.status(409).json({
+      code: 409,
+      data: existing,
+      message: '任务已结束，无法取消',
+    });
+    return;
+  }
+  // 真实取消：落库为 cancelled，让后台 worker（若有）轮询时跳过该 job
   const row = kDao.updateIngestJob(tenantId, req.params.jobId, {
     status: 'cancelled',
     stage: 'cancelled',
     finished_at: Math.floor(Date.now() / 1000),
   });
+  logger.info('[StaffK] 已取消 ingest job', { jobId: req.params.jobId, prevStatus: existing.status });
   res.json({ code: 0, data: row, message: 'ok' });
 });
 

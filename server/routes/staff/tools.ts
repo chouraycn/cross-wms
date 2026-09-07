@@ -6,7 +6,7 @@
  *   GET    /buckets           — 获取所有 bucket 聚合
  *   GET    /:tool_id          — 工具详情
  *   POST   /                  — 创建工具
- *   POST   /probe             — 探测工具（stub）
+ *   POST   /probe             — 探测工具（复用 /:tool_id/test 真实执行）
  *   PUT    /:tool_id          — 更新工具
  *   DELETE /:tool_id          — 删除工具
  *   POST   /:tool_id/test     — 测试工具调用（真实执行）
@@ -161,93 +161,78 @@ router.post('/probe', async (req: Request, res: Response) => {
     return;
   }
 
-  // 构造请求头 + auth（bearer/basic/none 在 headers 中注入 Authorization）
+  // 复用 /:tool_id/test 的真实执行原语（fetchWithSsrFGuard + 30s 超时 + 私网放行），
+  // 仅把前端传入的裸配置组装成一条临时 ToolRow，探测本质是一次性测试。
+  const tenantId = (req.body.tenant_id as string) || (req.query.tenant_id as string) || DEFAULT_TENANT_ID;
   const reqHeaders: Record<string, string> = {};
   if (headers && typeof headers === 'object') {
     for (const [k, v] of Object.entries(headers as Record<string, unknown>)) {
       reqHeaders[k] = String(v);
     }
   }
-  const authConfig = auth && typeof auth === 'object' ? (auth as Record<string, any>) : {};
-  const authType = String(authConfig.type || 'none').toLowerCase();
-  if (authType === 'bearer' && authConfig.token) {
-    reqHeaders['Authorization'] = `Bearer ${String(authConfig.token)}`;
-  } else if (authType === 'basic') {
-    if (authConfig.username !== undefined || authConfig.password !== undefined) {
-      const credential = Buffer.from(`${authConfig.username ?? ''}:${authConfig.password ?? ''}`).toString('base64');
-      reqHeaders['Authorization'] = `Basic ${credential}`;
-    } else if (authConfig.token) {
-      reqHeaders['Authorization'] = `Basic ${String(authConfig.token)}`;
-    }
-  }
+  const synthRow: ToolRow = {
+    id: 'probe',
+    tenant_id: tenantId,
+    name: (req.body.name as string) || 'probe',
+    display_name: (req.body.display_name as string) ?? null,
+    description: (req.body.description as string) ?? null,
+    bucket: (req.body.bucket as string) ?? '未分桶',
+    tool_type: 'http',
+    method: String(method || 'POST').toUpperCase(),
+    url: url as string,
+    headers_json: JSON.stringify(reqHeaders),
+    auth_json: JSON.stringify(auth && typeof auth === 'object' ? auth : {}),
+    config_json: '{}',
+    input_schema: (input_schema as string) ?? '{}',
+    output_schema: (req.body.output_schema as string) ?? '{}',
+    allowed_skills_json: '[]',
+    mcp_server_id: null,
+    mcp_tool_name: null,
+    enabled: 1,
+    created_at: 0,
+    updated_at: 0,
+  };
 
-  // 生成测试参数：优先使用 sample_arguments，否则从 input_schema 推断
+  // 测试参数：优先使用 sample_arguments，否则从 input_schema 推断
   const testArgs: Record<string, any> =
     sample_arguments && typeof sample_arguments === 'object'
       ? (sample_arguments as Record<string, any>)
       : generateSampleArgs(input_schema);
 
-  const httpMethod = String(method || 'POST').toUpperCase();
-  const hasBody = !['GET', 'HEAD', 'DELETE'].includes(httpMethod);
-  const fetchOptions: RequestInit = { method: httpMethod, headers: reqHeaders };
-  if (hasBody) {
-    if (!reqHeaders['Content-Type'] && !reqHeaders['content-type']) {
-      reqHeaders['Content-Type'] = 'application/json';
-    }
-    fetchOptions.body = JSON.stringify(testArgs);
-  }
-
-  // 5 秒超时（AbortController）
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
-  fetchOptions.signal = controller.signal;
-
   try {
-    let fetchUrl = url as string;
-    // GET 请求：把测试参数合并到 query string
-    if (httpMethod === 'GET' && Object.keys(testArgs).length > 0) {
-      const params = new URLSearchParams();
-      for (const [k, v] of Object.entries(testArgs)) {
-        if (v !== undefined && v !== null) {
-          params.set(k, String(v));
-        }
-      }
-      const qs = params.toString();
-      if (qs) {
-        fetchUrl = fetchUrl.includes('?') ? `${fetchUrl}&${qs}` : `${fetchUrl}?${qs}`;
-      }
-    }
-
-    const response = await fetch(fetchUrl, fetchOptions);
-    const respText = await response.text();
-
-    // data_preview：优先解析 JSON，否则截断到前 1000 字符
+    const result = await runToolTest(tenantId, synthRow, testArgs);
+    const output = (result.output || {}) as { status?: number; contentType?: string | null; body?: string };
+    const rawBody = typeof output.body === 'string' ? output.body : null;
     let dataPreview: unknown = null;
-    try {
-      dataPreview = JSON.parse(respText);
-    } catch {
-      dataPreview = respText.length > 1000 ? respText.slice(0, 1000) : respText;
+    if (rawBody !== null) {
+      try {
+        dataPreview = JSON.parse(rawBody);
+      } catch {
+        dataPreview = rawBody.length > 1000 ? rawBody.slice(0, 1000) : rawBody;
+      }
     }
-
-    const success = response.status >= 200 && response.status < 300;
-    const inferredSchema = success ? inferJsonSchema(dataPreview) : {};
-
+    const statusCode = typeof output.status === 'number' ? output.status : null;
+    const success = statusCode !== null && statusCode >= 200 && statusCode < 300;
+    const inferredSchema = success && dataPreview ? inferJsonSchema(dataPreview) : {};
+    const error = success
+      ? null
+      : (result.error || {
+          code: statusCode !== null ? `HTTP_${statusCode}` : 'PROBE_ERROR',
+          message: statusCode !== null ? `工具探测返回异常状态码：${statusCode}` : '工具探测失败',
+        });
     res.json({
       code: 0,
       data: {
         implemented: true,
         success,
-        status_code: response.status,
+        status_code: statusCode,
         data_preview: dataPreview,
         inferred_output_schema: inferredSchema,
-        error: success
-          ? null
-          : { code: `HTTP_${response.status}`, message: `工具探测返回异常状态码：${response.status}` },
+        error,
       },
       message: success ? '探测成功' : '探测失败：HTTP 状态码异常',
     });
   } catch (err) {
-    const isTimeout = err instanceof Error && err.name === 'AbortError';
     res.json({
       code: 0,
       data: {
@@ -257,14 +242,12 @@ router.post('/probe', async (req: Request, res: Response) => {
         data_preview: null,
         inferred_output_schema: {},
         error: {
-          code: isTimeout ? 'TIMEOUT' : 'PROBE_ERROR',
-          message: isTimeout ? '工具探测超时' : err instanceof Error ? err.message : String(err),
+          code: 'PROBE_ERROR',
+          message: err instanceof Error ? err.message : String(err),
         },
       },
-      message: isTimeout ? '探测失败：请求超时' : '探测失败：网络错误',
+      message: '探测失败：网络错误',
     });
-  } finally {
-    clearTimeout(timeoutId);
   }
 });
 
@@ -459,23 +442,56 @@ async function runToolTest(
     }
   }
 
-  // HTTP 工具：复用软件自带 SSRF 防护 fetch
+  // HTTP 工具：复用软件自带 SSRF 防护 fetch（与 /:tool_id/test 同一原语）
   if (!row.url) {
     return { success: false, output: null, error: { code: 'NO_URL', message: 'HTTP 工具未配置 url' } };
   }
   const method = (row.method || 'POST').toUpperCase();
-  const headers: Record<string, string> = { ...(((row.headers_json as string | null) ?? '{}') as unknown as Record<string, string>) };
-  const auth = (((row.auth_json as string | null) ?? '{}') as unknown as { type?: string; token?: string; apiKey?: string; header?: string });
+  const headers: Record<string, string> = {};
+  try {
+    const parsedHeaders = JSON.parse((row.headers_json as string | null) ?? '{}');
+    if (parsedHeaders && typeof parsedHeaders === 'object') {
+      for (const [k, v] of Object.entries(parsedHeaders as Record<string, unknown>)) {
+        headers[k] = String(v);
+      }
+    }
+  } catch {
+    /* 忽略损坏的 headers_json，沿用空头 */
+  }
+  let auth: { type?: string; token?: string; apiKey?: string; header?: string; username?: string; password?: string } = {};
+  try {
+    auth = JSON.parse((row.auth_json as string | null) ?? '{}');
+  } catch {
+    auth = {};
+  }
   if (auth.type === 'bearer' && auth.token) {
     headers['Authorization'] = `Bearer ${auth.token}`;
   } else if (auth.type === 'apikey' && auth.apiKey) {
     headers[auth.header || 'X-API-Key'] = auth.apiKey;
+  } else if (auth.type === 'basic') {
+    if (auth.username !== undefined || auth.password !== undefined) {
+      headers['Authorization'] = `Basic ${Buffer.from(`${auth.username ?? ''}:${auth.password ?? ''}`).toString('base64')}`;
+    } else if (auth.token) {
+      headers['Authorization'] = `Basic ${String(auth.token)}`;
+    }
   }
   const hasBody = !['GET', 'HEAD', 'DELETE'].includes(method);
   const options: RequestInit = { method, headers };
+  let targetUrl = row.url;
   if (hasBody) {
     headers['Content-Type'] = headers['Content-Type'] || 'application/json';
     options.body = typeof args === 'string' ? args : JSON.stringify(args);
+  } else if (args && typeof args === 'object' && Object.keys(args).length > 0) {
+    // GET/HEAD/DELETE：把测试参数合并到 query string（与 /probe 语义一致）
+    try {
+      const urlObj = new URL(row.url);
+      for (const [k, v] of Object.entries(args)) {
+        if (v !== undefined && v !== null) urlObj.searchParams.set(k, String(v));
+      }
+      targetUrl = urlObj.toString();
+    } catch {
+      /* 非法 URL 仍按原 url 发送 */
+    }
   }
   try {
     // 工具为用户自有配置（自托管服务），放行私有网络访问，但仍走 SSRF 防护（DNS 钉扎 + 响应体限制）
