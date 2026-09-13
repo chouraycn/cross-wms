@@ -90,3 +90,4 @@
 - macOS 无 `timeout`/`cat -A`；zsh 下 `grep --include` 通配符 "no matches found"
 - 全仓 grep 须 `--exclude-dir=engine`
 - Playwright 清 `test-results/` 触发 safe-delete 守卫 → 绕过 `--output=/tmp/pw-xxx`
+- ⚠️ **数字员工 dev 不显示根因（2026-09-05 实测，09-11 已加固）**：数字员工 = 常驻 iframe（src=`/staffdeck-app/`），由 `server/index.ts` 静态托管 `dist/staffdeck-app/`。**原根因**：路由仅在后端启动时判 `index.html` 存在才注册 → 后端先于产物启动/运行期产物被清理即 404 白屏。**09-11 加固**：改为无条件注册路由、请求期判产物存在（缺失返 503 提示 `npm run staffdeck:build`）；**构建产物后无需重启 server 即生效**。dev 仍须先 `npm run staffdeck:build` 生成 `dist/staffdeck-app/`（或 cp `StaffDeck-main/frontend-enterprise/dist` → `dist/staffdeck-app`）；dev 访问入口须为 server 端口（默认 3001），vite 5173 未配 `/staffdeck-app` 代理，走 5173 也会白屏。
