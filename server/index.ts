@@ -701,25 +701,26 @@ const FRONTEND_DIST_DIR = process.env.FRONTEND_DIR
 // StaffDeck-main 原前端(shadcn/Tailwind)构建产物放在 dist/staffdeck-app/，
 // 通过 /staffdeck-app/* 独立托管，iframe 嵌入主程序，确保 Teal 设计系统不被 MUI 主主题污染。
 const STAFFDECK_APP_DIR = path.join(FRONTEND_DIST_DIR, 'staffdeck-app');
-if (fs.existsSync(STAFFDECK_APP_DIR) && fs.existsSync(path.join(STAFFDECK_APP_DIR, 'index.html'))) {
-  logger.info(`[Server] 数字员工独立前端目录: ${STAFFDECK_APP_DIR}`);
-  app.use('/staffdeck-app', express.static(STAFFDECK_APP_DIR, { index: false }));
-  // 该前缀下的 SPA fallback（深层路由返回 staffdeck-app 的 index.html，而非主前端）
-  const staffdeckIndexHtml = path.join(STAFFDECK_APP_DIR, 'index.html');
-  app.get(/^\/staffdeck-app\/(?!api\/).*/, (_req, res) => {
-    // 防御：构建产物可能被清理/未完全生成，避免 sendFile 抛 ENOENT 经全局兜底变成泛化 500
-    if (!fs.existsSync(staffdeckIndexHtml)) {
-      res
-        .status(503)
-        .type('text/plain; charset=utf-8')
-        .send('数字员工前端未构建（缺少 dist/staffdeck-app/index.html）。请先运行 npm run staffdeck:build。');
-      return;
-    }
-    res.sendFile(staffdeckIndexHtml);
-  });
-} else {
-  logger.warn(`[Server] 数字员工独立前端目录不存在: ${STAFFDECK_APP_DIR}（需先构建 StaffDeck-main/frontend-enterprise）`);
-}
+// 产物路径在请求期判定，而非启动时——否则后端先于 dist/staffdeck-app/index.html 启动、
+// 或运行期产物被清理/重建时，路由永不注册 → iframe 404 白屏（2026-09-05 / 09-08 实测根因）。
+const staffdeckIndexHtml = path.join(STAFFDECK_APP_DIR, 'index.html');
+const serveStaffdeckIndex = (_req: express.Request, res: express.Response) => {
+  // 防御：构建产物可能尚未生成/已被清理，避免 sendFile 抛 ENOENT 经全局兜底变成泛化 500
+  if (!fs.existsSync(staffdeckIndexHtml)) {
+    logger.warn(`[Server] 数字员工前端未构建: ${staffdeckIndexHtml}`);
+    res
+      .status(503)
+      .type('text/plain; charset=utf-8')
+      .send('数字员工前端未构建（缺少 dist/staffdeck-app/index.html）。请先运行 npm run staffdeck:build。');
+    return;
+  }
+  res.sendFile(staffdeckIndexHtml);
+};
+// 无条件注册：静态目录若不存在，express.static 自动 next() 穿透，不影响其它路由；
+// 静态资源（js/css/asset）由 express.static 优先响应，落到此 handler 的均为深层路由 → SPA fallback
+app.use('/staffdeck-app', express.static(STAFFDECK_APP_DIR, { index: false }));
+// 该前缀下的 SPA fallback（深层路由返回 staffdeck-app 的 index.html，而非主前端）；排除 api 子路径
+app.get(/^\/staffdeck-app\/(?!api\/).*/, serveStaffdeckIndex);
 
 // ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
 // 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIST_DIR 加载
